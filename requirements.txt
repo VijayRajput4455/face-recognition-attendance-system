@@ -1,0 +1,59 @@
+# # API
+# fastapi
+# uvicorn[standard]
+
+# # Database
+# sqlalchemy
+# psycopg2-binary
+# alembic
+
+# # Settings
+# pydantic
+# pydantic-settings
+# python-dotenv
+
+# # Authentication
+# python-jose[cryptography]
+# passlib[bcrypt]
+
+# # File Uploads
+# python-multipart
+
+# # Redis
+# redis
+
+# # RabbitMQ
+# pika
+
+# # Data Processing
+# numpy
+# pandas
+
+# # Image Processing
+# opencv-python
+# Pillow
+
+# # Face Recognition
+# insightface
+# onnxruntime
+
+# # Vector Database
+# pymilvus
+
+# # Logging & Monitoring
+# prometheus-client
+
+# # Utilities
+# requests
+# httpx
+
+# # Testing
+# pytest
+# pytest-asyncio
+
+
+sqlalchemy
+psycopg2-binary
+alembic
+pydantic-settings
+python-dotenv

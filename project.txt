@@ -1,0 +1,15 @@
+Phase 1 → Employee Registration
+Phase 2 → Face Registration
+Phase 3 → Face Recognition
+Phase 4 → Attendance Engine
+Phase 5 → Visitor Management
+Phase 6 → Access Control
+Phase 7 → RabbitMQ + Workers
+Phase 8 → Redis
+Phase 9 → Dashboard
+Phase 10 → Docker + Kubernetes
+
+
+conda activate face-recognition
+uvicorn app.main:app --reload
+python -m app.workers.enrollment_worker
