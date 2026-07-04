@@ -16,10 +16,7 @@ from app.orchestrators.recognition_orchestrator import (
 
 logger = get_logger(__name__)
 
-router = APIRouter(
-    prefix="/recognition",
-    tags=["Recognition"],
-)
+router = APIRouter()
 
 orchestrator = RecognitionOrchestrator()
 

@@ -26,6 +26,21 @@ class EmployeeRepository:
         return employee
 
     # ==========================================================
+    # Get All
+    # ==========================================================
+
+    def get_all(
+        self,
+        db: Session,
+    ) -> list[Employee]:
+
+        return (
+            db.query(Employee)
+            .order_by(Employee.employee_code)
+            .all()
+        )
+
+    # ==========================================================
     # Get By Employee Code
     # ==========================================================
 
@@ -60,9 +75,93 @@ class EmployeeRepository:
             )
             .first()
         )
-    
+
     # ==========================================================
-    # Update Status
+    # Get By Department
+    # ==========================================================
+
+    def get_by_department(
+        self,
+        db: Session,
+        department_id: UUID | str,
+    ) -> list[Employee]:
+
+        return (
+            db.query(Employee)
+            .filter(
+                Employee.department_id == department_id
+            )
+            .all()
+        )
+
+    # ==========================================================
+    # Get By Shift
+    # ==========================================================
+
+    def get_by_shift(
+        self,
+        db: Session,
+        shift_id: UUID | str,
+    ) -> list[Employee]:
+
+        return (
+            db.query(Employee)
+            .filter(
+                Employee.shift_id == shift_id
+            )
+            .all()
+        )
+
+    # ==========================================================
+    # Get By Status
+    # ==========================================================
+
+    def get_by_status(
+        self,
+        db: Session,
+        employment_status: str,
+    ) -> list[Employee]:
+
+        return (
+            db.query(Employee)
+            .filter(
+                Employee.employment_status == employment_status
+            )
+            .all()
+        )
+
+    # ==========================================================
+    # Update
+    # ==========================================================
+
+    def update(
+        self,
+        db: Session,
+        employee: Employee,
+    ) -> Employee:
+
+        db.commit()
+
+        db.refresh(employee)
+
+        return employee
+
+    # ==========================================================
+    # Delete
+    # ==========================================================
+
+    def delete(
+        self,
+        db: Session,
+        employee: Employee,
+    ) -> None:
+
+        db.delete(employee)
+
+        db.commit()
+
+    # ==========================================================
+    # Update Employment Status
     # ==========================================================
 
     def update_status(

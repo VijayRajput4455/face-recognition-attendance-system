@@ -16,6 +16,10 @@ from app.api.v1.endpoints.department import (
     router as department_router,
 )
 
+from app.api.v1.endpoints.shift import (
+    router as shift_router,
+)
+
 api_router = APIRouter()
 
 api_router.include_router(
@@ -40,4 +44,10 @@ api_router.include_router(
     department_router,
     prefix="/departments",
     tags=["Departments"],
+)
+
+api_router.include_router(
+    shift_router,
+    prefix="/shifts",
+    tags=["Shifts"],
 )

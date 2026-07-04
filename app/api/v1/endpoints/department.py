@@ -15,10 +15,7 @@ from app.schemas.department import (
 
 logger = get_logger(__name__)
 
-router = APIRouter(
-    prefix="/departments",
-    tags=["Departments"],
-)
+router = APIRouter()
 
 department_orchestrator = DepartmentOrchestrator()
 
