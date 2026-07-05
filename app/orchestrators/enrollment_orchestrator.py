@@ -1,23 +1,23 @@
-from pathlib import Path
+from uuid import UUID
 
-import cv2
-import numpy as np
-from sqlalchemy.orm import Session
+from fastapi import HTTPException
+from fastapi import UploadFile
+from fastapi import status
 
-from app.core.config import settings
 from app.core.database import SessionLocal
 from app.core.logger import get_logger
-from app.enums.employee_status import EmployeeStatus
-from app.enums.enrollment_status import EnrollmentStatus
-from app.repositories.enrollment_repo import EnrollmentRepository
+
+from app.models.employee_enrollment import EmployeeEnrollment
+
 from app.repositories.employee_repo import EmployeeRepository
-from app.schemas.enrollment import EnrollmentMessage
-from app.services.cleanup_service import CleanupService
-from app.services.embedding_service import EmbeddingService
-from app.services.face_quality_service import FaceQualityService
-from app.services.frame_extraction_service import FrameExtractionService
-from app.services.insightface_service import InsightFaceService
-from app.services.milvus_service import MilvusService
+from app.repositories.enrollment_repo import EnrollmentRepository
+
+from app.schemas.enrollment import EnrollmentMessage, EnrollmentResponse
+
+from app.services.rabbitmq_service import RabbitMQClient
+
+from app.utils.file_handler import FileHandler
+
 
 logger = get_logger(__name__)
 
@@ -26,446 +26,288 @@ class EnrollmentOrchestrator:
 
     def __init__(self):
 
-        self.frame_service = FrameExtractionService()
-
-        self.insightface_service = InsightFaceService()
-
-        self.face_quality_service = FaceQualityService()
-
-        self.embedding_service = EmbeddingService()
-
-        self.milvus_service = MilvusService()
-
-        self.cleanup_service = CleanupService()
-
         self.employee_repository = EmployeeRepository()
 
         self.enrollment_repository = EnrollmentRepository()
 
-    # ======================================================
-    # Public API
-    # ======================================================
+        self.rabbitmq = RabbitMQClient()
 
-    def process(
+    # ==========================================================
+    # Start Enrollment
+    # ==========================================================
+
+    def start(
         self,
-        message: EnrollmentMessage,
-    ) -> None:
-
-        logger.info(
-            "Starting enrollment.",
-            extra={
-                "employee_id": message.employee_id,
-                "employee_code": message.employee_code,
-            },
-        )
-
-        frame_directory = None
+        employee_id: UUID,
+        video_file: UploadFile,
+    ):
 
         db = SessionLocal()
 
         try:
 
-            self._mark_processing(
-                db,
-                message,
+            # --------------------------------------------------
+            # Validate Employee
+            # --------------------------------------------------
+
+            employee = self.employee_repository.get_by_id(
+                db=db,
+                employee_id=employee_id,
             )
 
-            frame_directory = self._extract_frames(
-                message,
+            if employee is None:
+
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Employee not found.",
+                )
+
+            # --------------------------------------------------
+            # Check Pending Enrollment
+            # --------------------------------------------------
+
+            existing = (
+                self.enrollment_repository
+                .get_pending_by_employee(
+                    db=db,
+                    employee_id=employee_id,
+                )
             )
 
-            embedding = self._generate_embedding(
-                frame_directory,
+            if existing:
+
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="Employee already has a pending enrollment.",
+                )
+
+            # --------------------------------------------------
+            # Save Video
+            # --------------------------------------------------
+
+            video_path = FileHandler.save_video(
+                employee.employee_code,
+                video_file,
             )
 
-            self._store_embedding(
-                message,
-                embedding,
+            # --------------------------------------------------
+            # Create Enrollment
+            # --------------------------------------------------
+
+            enrollment = EmployeeEnrollment(
+
+                employee_id=employee.id,
+
+                video_path=video_path,
+
+                status="PENDING",
             )
 
-            self._mark_completed(
-                db,
-                message,
+            enrollment = self.enrollment_repository.create(
+                db=db,
+                enrollment=enrollment,
+            )
+
+            # --------------------------------------------------
+            # Publish RabbitMQ
+            # --------------------------------------------------
+
+            message = EnrollmentMessage(
+
+                employee_id=str(employee.id),
+
+                employee_code=employee.employee_code,
+
+                enrollment_id=str(enrollment.id),
+
+                video_path=video_path,
+            )
+
+            self.rabbitmq.publish(
+                "employee_enrollment",
+                message.model_dump(),
             )
 
             logger.info(
-                "Enrollment completed successfully.",
+                "Enrollment started successfully.",
                 extra={
-                    "employee_id": message.employee_id,
-                    "employee_code": message.employee_code,
+                    "employee_id": str(employee.id),
+                    "enrollment_id": str(enrollment.id),
                 },
             )
 
-        except Exception as ex:
-
-            self._mark_failed(
-                db,
-                message,
-                ex,
-            )
-
-            raise
+            return {
+                "employee_id": str(employee.id),
+                "enrollment_id": str(enrollment.id),
+                "status": "PENDING",
+            }
 
         finally:
 
             db.close()
 
-            if frame_directory is not None:
+    # ==========================================================
+    # Get All Enrollments
+    # ==========================================================
 
-                self._cleanup(
-                    message,
-                )
-
-    # ======================================================
-    # Frame Extraction
-    # ======================================================
-
-    def _extract_frames(
+    def get_all(
         self,
-        message: EnrollmentMessage,
-    ) -> Path:
+    ) -> list[EnrollmentResponse]:
 
-        logger.info(
-            "Extracting frames."
-        )
+        db = SessionLocal()
 
-        self.frame_service.extract_frames(
+        try:
 
-            video_path=message.video_path,
+            enrollments = self.enrollment_repository.get_all(
+                db=db,
+            )
 
-            employee_code=message.employee_code,
+            return [
 
-        )
+                EnrollmentResponse.model_validate(
+                    enrollment
+                )
 
-        return (
+                for enrollment in enrollments
 
-            Path(settings.FRAMES_STORAGE_PATH)
+            ]
 
-            / message.employee_code
+        finally:
 
-        )
+            db.close()
 
-    # ======================================================
-    # Embedding Generation
-    # ======================================================
+    # ==========================================================
+    # Get Enrollment By ID
+    # ==========================================================
 
-    def _generate_embedding(
+    def get_by_id(
         self,
-        frame_directory: Path,
-    ) -> np.ndarray:
+        enrollment_id: UUID,
+    ) -> EnrollmentResponse:
 
-        embeddings = []
+        db = SessionLocal()
 
-        frame_paths = sorted(
-            frame_directory.glob("*.jpg")
-        )
+        try:
 
-        logger.info(
-            "Processing frames.",
-            extra={
-                "total_frames": len(frame_paths),
-            },
-        )
-
-        for frame_path in frame_paths:
-
-            image = cv2.imread(
-                str(frame_path)
+            enrollment = self.enrollment_repository.get_by_id(
+                db=db,
+                enrollment_id=enrollment_id,
             )
 
-            if image is None:
+            if enrollment is None:
 
-                logger.warning(
-                    "Unable to read frame.",
-                    extra={
-                        "frame": frame_path.name,
-                    },
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Enrollment not found.",
                 )
 
-                continue
-
-            batch = (
-                self.insightface_service.analyze_image(
-                    image
-                )
+            return EnrollmentResponse.model_validate(
+                enrollment
             )
 
-            if not batch:
-                continue
+        finally:
 
-            largest_face = (
-                self.insightface_service.get_largest_face(
-                    batch
-                )
-            )
+            db.close()
 
-            if largest_face is None:
-                continue
+    # ==========================================================
+    # Get Employee Enrollments
+    # ==========================================================
 
-            quality = self.face_quality_service.check(
-
-                image=image,
-
-                face=largest_face,
-
-                total_faces=len(batch),
-
-            )
-
-            if not quality.passed:
-
-                logger.debug(
-                    "Rejected frame.",
-                    extra={
-                        "frame": frame_path.name,
-                        "reasons": quality.reasons,
-                    },
-                )
-
-                continue
-
-            embeddings.append(
-                largest_face.embedding
-            )
-
-        if not embeddings:
-
-            raise RuntimeError(
-                "No valid face found."
-            )
-
-        logger.info(
-            "Embeddings generated.",
-            extra={
-                "valid_embeddings": len(embeddings),
-            },
-        )
-
-        return self.embedding_service.average(
-            embeddings
-        )
-    
-    # ======================================================
-    # Store Embedding
-    # ======================================================
-
-    def _store_embedding(
+    def get_by_employee(
         self,
-        message: EnrollmentMessage,
-        embedding: np.ndarray,
-    ) -> None:
+        employee_id: UUID,
+    ) -> list[EnrollmentResponse]:
 
-        logger.info(
-            "Saving embedding into Milvus.",
-            extra={
-                "employee_id": message.employee_id,
-                "employee_code": message.employee_code,
-            },
-        )
+        db = SessionLocal()
 
-        self.milvus_service.insert(
+        try:
 
-            employee_id=message.employee_id,
+            enrollments = self.enrollment_repository.get_by_employee(
+                db=db,
+                employee_id=employee_id,
+            )
 
-            employee_code=message.employee_code,
+            return [
+                EnrollmentResponse.model_validate(
+                    enrollment
+                )
+                for enrollment in enrollments
+            ]
 
-            embedding=embedding,
+        finally:
 
-        )
+            db.close()
 
-        logger.info(
-            "Embedding stored successfully.",
-            extra={
-                "employee_id": message.employee_id,
-                "employee_code": message.employee_code,
-            },
-        )
+    # ==========================================================
+    # Retry Enrollment
+    # ==========================================================
 
-    # ======================================================
-    # Mark Processing
-    # ======================================================
-
-    def _mark_processing(
+    def retry(
         self,
-        db: Session,
-        message: EnrollmentMessage,
-    ) -> None:
+        enrollment_id: UUID,
+    ):
 
-        employee = self.employee_repository.update_status(
+        db = SessionLocal()
 
-            db=db,
+        try:
 
-            employee_id=message.employee_id,
+            enrollment = self.enrollment_repository.get_by_id(
+                db=db,
+                enrollment_id=enrollment_id,
+            )
 
-            status=EmployeeStatus.ACTIVE,
+            if enrollment is None:
 
-        )
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Enrollment not found.",
+                )
 
-        if employee is None:
+            employee = self.employee_repository.get_by_id(
+                db=db,
+                employee_id=enrollment.employee_id,
+            )
 
-            logger.warning(
-                "Employee not found.",
+            if employee is None:
+
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Employee not found.",
+                )
+
+            enrollment = self.enrollment_repository.update_status(
+                db=db,
+                enrollment_id=enrollment.id,
+                status="PENDING",
+                error_message=None,
+            )
+
+            message = EnrollmentMessage(
+                employee_id=str(employee.id),
+                employee_code=employee.employee_code,
+                enrollment_id=str(enrollment.id),
+                video_path=enrollment.video_path,
+            )
+
+            self.rabbitmq.publish(
+                "employee_enrollment",
+                message.model_dump(),
+            )
+
+            logger.info(
+                "Enrollment retry started.",
                 extra={
-                    "employee_id": message.employee_id,
+                    "employee_id": str(employee.id),
+                    "enrollment_id": str(enrollment.id),
                 },
             )
 
-            return
+            return {
+                "message": "Enrollment retry started successfully.",
+                "enrollment_id": str(enrollment.id),
+                "status": enrollment.status,
+            }
 
-        enrollment = self.enrollment_repository.update_status(
-            db=db,
-            enrollment_id=message.enrollment_id,
-            status=EnrollmentStatus.PROCESSING,
-        )
+        finally:
 
-        if enrollment is None:
-
-            logger.warning(
-                "Enrollment record not found.",
-                extra={
-                    "enrollment_id": message.enrollment_id,
-                },
-            )
-
-        logger.info(
-            "Employee status updated.",
-            extra={
-                "employee_id": message.employee_id,
-                "employee_code": message.employee_code,
-                "status": EmployeeStatus.ACTIVE.value,
-            },
-        )
-
-    # ======================================================
-    # Mark Completed
-    # ======================================================
-
-    def _mark_completed(
-        self,
-        db: Session,
-        message: EnrollmentMessage,
-    ) -> None:
-
-        employee = self.employee_repository.update_status(
-            db=db,
-            employee_id=message.employee_id,
-            status=EmployeeStatus.ACTIVE,
-        )
-
-        enrollment = self.enrollment_repository.update_status(
-            db=db,
-            enrollment_id=message.enrollment_id,
-            status=EnrollmentStatus.COMPLETED,
-        )
-
-        logger.info(
-            "Enrollment status updated.",
-            extra={
-                "employee_id": message.employee_id,
-                "employee_status": employee.employment_status if employee else None,
-                "enrollment_id": message.enrollment_id,
-                "enrollment_status": enrollment.status if enrollment else None,
-            },
-        )
-
-    # ======================================================
-    # Mark Failed
-    # ======================================================
-
-    def _mark_failed(
-        self,
-        db: Session,
-        message: EnrollmentMessage,
-        exception: Exception,
-    ) -> None:
-
-        self.employee_repository.update_status(
-
-            db=db,
-
-            employee_id=message.employee_id,
-
-            status=EmployeeStatus.INACTIVE,
-
-        )
-
-        self.enrollment_repository.update_status(
-
-            db=db,
-
-            enrollment_id=message.enrollment_id,
-
-            status=EnrollmentStatus.FAILED,
-
-            error_message=str(exception),
-
-        )
-
-        logger.exception(
-            "Enrollment processing failed.",
-            extra={
-                "employee_id": message.employee_id,
-                "employee_code": message.employee_code,
-                "status": EmployeeStatus.INACTIVE.value,
-            },
-        )
-
-    # ======================================================
-    # Cleanup
-    # ======================================================
-
-    def _cleanup(
-        self,
-        message: EnrollmentMessage,
-    ) -> None:
-
-        logger.info(
-            "Cleaning temporary files.",
-            extra={
-                "employee_code": message.employee_code,
-            },
-        )
-
-        self.cleanup_service.cleanup(
-
-            video_path=message.video_path,
-
-            frames_directory=(
-
-                Path(settings.FRAMES_STORAGE_PATH)
-
-                / message.employee_code
-
-            ),
-
-        )
-
-    # ======================================================
-    # Health
-    # ======================================================
-
-    def is_healthy(
-        self,
-    ) -> bool:
-
-        return self.milvus_service.is_healthy()
-
-    # ======================================================
-    # Utility
-    # ======================================================
-
-    def __repr__(
-        self,
-    ) -> str:
-
-        return (
-
-            "EnrollmentOrchestrator("
-
-            f"frame_service={self.frame_service.__class__.__name__}, "
-
-            f"insightface_service={self.insightface_service.__class__.__name__}, "
-
-            f"milvus_service={self.milvus_service.__class__.__name__})"
-
-        )
+            db.close()

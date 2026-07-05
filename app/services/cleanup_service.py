@@ -1,7 +1,9 @@
 import shutil
 from pathlib import Path
+from app.core.config import settings
 from app.core.logger import get_logger
 logger = get_logger(__name__)
+
 
 class CleanupService:
 
@@ -71,21 +73,65 @@ class CleanupService:
         frames_directory: str | Path,
     ) -> None:
 
-        logger.info(
-            "Starting cleanup..."
-        )
+        logger.info("Starting cleanup...")
 
-        self.delete_file(
-            video_path,
-        )
+        video_path = Path(video_path)
+        frames_directory = Path(frames_directory)
 
-        self.delete_directory(
-            frames_directory,
-        )
+        # ---------------------------------------------------------
+        # Delete Video
+        # ---------------------------------------------------------
 
-        logger.info(
-            "Cleanup completed."
-        )
+        if not settings.KEEP_ENROLLMENT_VIDEO:
+
+            self.delete_file(video_path)
+
+        else:
+
+            logger.info(
+                "Keeping enrollment video: %s",
+                video_path,
+            )
+
+        # ---------------------------------------------------------
+        # Delete Frames
+        # ---------------------------------------------------------
+
+        if not settings.KEEP_EXTRACTED_FRAMES:
+
+            self.delete_directory(frames_directory)
+
+        else:
+
+            logger.info(
+                "Keeping extracted frames: %s",
+                frames_directory,
+            )
+
+        # ---------------------------------------------------------
+        # Delete Employee Folder if Empty
+        # ---------------------------------------------------------
+
+        employee_directory = video_path.parent
+
+        if employee_directory.exists():
+
+            try:
+
+                employee_directory.rmdir()
+
+                logger.info(
+                    "Deleted empty employee directory: %s",
+                    employee_directory,
+                )
+
+            except OSError:
+
+                logger.debug(
+                    "Employee directory is not empty."
+                )
+
+        logger.info("Cleanup completed.")
 
     # ---------------------------------------------------------
 

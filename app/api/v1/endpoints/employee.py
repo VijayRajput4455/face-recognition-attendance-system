@@ -1,17 +1,11 @@
+from urllib import request
 from uuid import UUID
 
 from fastapi import (
     APIRouter,
-    Depends,
-    UploadFile,
-    File,
-    Form,
     status,
 )
 
-from sqlalchemy.orm import Session
-
-from app.core.database import get_db
 from app.core.logger import get_logger
 
 from app.orchestrators.employee_orchestrator import (
@@ -19,50 +13,40 @@ from app.orchestrators.employee_orchestrator import (
 )
 
 from app.schemas.employee import (
+    EmployeeCreateRequest,
     EmployeeResponse,
     EmployeeUpdateRequest,
-)
-
-from app.services.employee_service import (
-    EmployeeService,
 )
 
 router = APIRouter()
 
 logger = get_logger(__name__)
 
-employee_service = EmployeeService()
-
 employee_orchestrator = EmployeeOrchestrator()
 
-
 # ==========================================================
-# Register Employee
+# Create Employee
 # ==========================================================
 
-@router.post("/register")
-async def register_employee(
-    employee_code: str = Form(...),
-    first_name: str = Form(...),
-    last_name: str = Form(None),
-    email: str = Form(None),
-    phone: str = Form(None),
-
-    video_file: UploadFile = File(...),
-
-    db: Session = Depends(get_db),
+@router.post(
+    "",
+    response_model=EmployeeResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_employee(
+    request: EmployeeCreateRequest,
 ):
 
-    return employee_service.register_employee(
-        db=db,
-        employee_code=employee_code,
-        first_name=first_name,
-        last_name=last_name,
-        email=email,
-        phone=phone,
-        video_file=video_file,
+    logger.info(
+        "Employee creation request received.",
+        extra={
+            "employee_code": request.employee_code,
+        },
     )
 
+    return employee_orchestrator.create_employee(
+        request=request,
+    )
 
 # ==========================================================
 # Get All Employees
@@ -188,6 +172,13 @@ def get_employee_by_code(
 def get_employees_by_department(
     department_id: UUID,
 ):
+    
+    logger.info(
+    "Fetching employees by department.",
+    extra={
+        "department_id": str(department_id),
+    },
+    )
 
     return employee_orchestrator.get_by_department(
         department_id=department_id,
@@ -205,6 +196,13 @@ def get_employees_by_department(
 def get_employees_by_shift(
     shift_id: UUID,
 ):
+    
+    logger.info(
+    "Fetching employees by shift.",
+    extra={
+        "shift_id": str(shift_id),
+    },
+    )
 
     return employee_orchestrator.get_by_shift(
         shift_id=shift_id,
@@ -222,6 +220,13 @@ def get_employees_by_shift(
 def get_employees_by_status(
     employment_status: str,
 ):
+    
+    logger.info(
+    "Fetching employees by status.",
+    extra={
+        "employment_status": employment_status,
+    },
+    )
 
     return employee_orchestrator.get_by_status(
         employment_status=employment_status,

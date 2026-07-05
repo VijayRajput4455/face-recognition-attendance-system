@@ -69,38 +69,29 @@ class Settings(BaseSettings):
     # ==========================================================
 
     FACE_MIN_CONFIDENCE: float = 0.70
-
     FACE_MIN_FACE_WIDTH: int = 112
     FACE_MIN_FACE_HEIGHT: int = 112
-
     FACE_MIN_BRIGHTNESS: int = 50
     FACE_MAX_BRIGHTNESS: int = 220
-
     FACE_MIN_BLUR_SCORE: float = 100.0
-
     FACE_MAX_YAW: float = 20.0
     FACE_MAX_PITCH: float = 20.0
     FACE_MAX_ROLL: float = 20.0
 
     # ==========================================================
-    # Storage
+    # Face Storage
     # ==========================================================
 
     STORAGE_ROOT: str = "face_storage"
-
     UPLOAD_STORAGE_PATH: str = "face_storage/uploads"
-
     FRAMES_STORAGE_PATH: str = "face_storage/frames"
-
     FACES_STORAGE_PATH: str = "face_storage/faces"
-
     EMBEDDING_STORAGE_PATH: str = "face_storage/embeddings"
-
     TEMP_STORAGE_PATH: str = "face_storage/temp"
-
     FAILED_STORAGE_PATH: str = "face_storage/failed"
-
     LOG_STORAGE_PATH: str = "logs"
+    KEEP_ENROLLMENT_VIDEO: bool = False
+    KEEP_EXTRACTED_FRAMES: bool = False
 
     # ==========================================================
     # Worker
@@ -139,11 +130,8 @@ class Settings(BaseSettings):
     # ==========================================================
 
     LOG_LEVEL: str = "INFO"
-
     LOG_STORAGE_PATH: str = "logs"
-
     APP_ENV: str = "development"
-
     APP_NAME: str = "face-recognition-system"
 
     # ==========================================================

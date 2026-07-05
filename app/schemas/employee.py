@@ -1,15 +1,16 @@
+from datetime import date
 from uuid import UUID
 
 from pydantic import BaseModel
-from pydantic import EmailStr
 from pydantic import ConfigDict
+from pydantic import EmailStr
 
 
 # ==========================================================
-# Register Employee
+# Create Employee
 # ==========================================================
 
-class EmployeeRegisterRequest(BaseModel):
+class EmployeeCreateRequest(BaseModel):
 
     employee_code: str
 
@@ -20,6 +21,8 @@ class EmployeeRegisterRequest(BaseModel):
     email: EmailStr | None = None
 
     phone: str | None = None
+
+    joining_date: date
 
     department_id: UUID | None = None
 
@@ -40,6 +43,8 @@ class EmployeeUpdateRequest(BaseModel):
 
     phone: str | None = None
 
+    joining_date: date | None = None
+
     department_id: UUID | None = None
 
     shift_id: UUID | None = None
@@ -59,9 +64,11 @@ class EmployeeResponse(BaseModel):
 
     last_name: str | None = None
 
-    email: str | None = None
+    email: EmailStr | None = None
 
     phone: str | None = None
+
+    joining_date: date | None = None
 
     department_id: UUID | None = None
 

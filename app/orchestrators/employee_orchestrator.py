@@ -6,11 +6,14 @@ from fastapi import status
 from app.core.database import SessionLocal
 from app.core.logger import get_logger
 
+from app.models.employee import Employee
+
 from app.repositories.employee_repo import EmployeeRepository
 
 from app.schemas.employee import (
-    EmployeeResponse,
+    EmployeeCreateRequest,
     EmployeeUpdateRequest,
+    EmployeeResponse,
 )
 
 logger = get_logger(__name__)
@@ -21,6 +24,75 @@ class EmployeeOrchestrator:
     def __init__(self):
 
         self.employee_repository = EmployeeRepository()
+
+        # ==========================================================
+    # Create Employee
+    # ==========================================================
+
+    def create_employee(
+        self,
+        request: EmployeeCreateRequest,
+    ) -> EmployeeResponse:
+
+        db = SessionLocal()
+
+        try:
+
+            existing_employee = (
+                self.employee_repository.get_by_employee_code(
+                    db=db,
+                    employee_code=request.employee_code,
+                )
+            )
+
+            if existing_employee:
+
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="Employee code already exists.",
+                )
+
+            employee = Employee(
+
+                employee_code=request.employee_code,
+
+                first_name=request.first_name,
+
+                last_name=request.last_name,
+
+                email=request.email,
+
+                phone=request.phone,
+                
+                joining_date=request.joining_date,
+
+                department_id=request.department_id,
+
+                shift_id=request.shift_id,
+
+                employment_status="PENDING",
+            )
+
+            employee = self.employee_repository.create(
+                db=db,
+                employee=employee,
+            )
+
+            logger.info(
+                "Employee created successfully.",
+                extra={
+                    "employee_id": str(employee.id),
+                    "employee_code": employee.employee_code,
+                },
+            )
+
+            return EmployeeResponse.model_validate(
+                employee,
+            )
+
+        finally:
+
+            db.close()
 
     # ==========================================================
     # Get All Employees
@@ -93,7 +165,7 @@ class EmployeeOrchestrator:
     # Update Employee
     # ==========================================================
 
-    def update(
+    def update_employee(
         self,
         employee_id: UUID,
         request: EmployeeUpdateRequest,
@@ -133,7 +205,7 @@ class EmployeeOrchestrator:
 
             employee.shift_id = request.shift_id
 
-            employee = self.employee_repository.update(
+            employee = self.employee_repository.update_employee(
 
                 db=db,
 
@@ -167,7 +239,7 @@ class EmployeeOrchestrator:
     # Delete Employee
     # ==========================================================
 
-    def delete(
+    def delete_employee(
         self,
         employee_id: UUID,
     ) -> None:
@@ -194,7 +266,7 @@ class EmployeeOrchestrator:
 
                 )
 
-            self.employee_repository.delete(
+            self.employee_repository.delete_employee(
 
                 db=db,
 

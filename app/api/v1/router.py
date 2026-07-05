@@ -20,6 +20,9 @@ from app.api.v1.endpoints.shift import (
     router as shift_router,
 )
 
+from app.api.v1.endpoints import enrollment
+
+
 api_router = APIRouter()
 
 api_router.include_router(
@@ -50,4 +53,10 @@ api_router.include_router(
     shift_router,
     prefix="/shifts",
     tags=["Shifts"],
+)
+
+api_router.include_router(
+    enrollment.router,
+    prefix="/enrollments",
+    tags=["Enrollments"],
 )
