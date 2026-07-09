@@ -21,6 +21,8 @@ from app.api.v1.endpoints.shift import (
 )
 
 from app.api.v1.endpoints import enrollment
+from app.api.v1.endpoints import attendance_logs
+from app.api.v1.endpoints import attendance_summaries
 
 
 api_router = APIRouter()
@@ -59,4 +61,16 @@ api_router.include_router(
     enrollment.router,
     prefix="/enrollments",
     tags=["Enrollments"],
+)
+
+api_router.include_router(
+    attendance_logs.router,
+    prefix="/attendance",
+    tags=["Attendance"],
+)
+
+api_router.include_router(
+    attendance_summaries.router,
+    prefix="/attendance",
+    tags=["Attendance"],
 )

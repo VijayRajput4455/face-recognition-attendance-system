@@ -544,7 +544,7 @@ Execute long-running AI processing asynchronously and reliably outside request/r
 
 - app/workers/enrollment_worker.py
 - app/workers/recognition_worker.py (future placeholder)
-- app/workers/attendance_worker.py (future placeholder)
+- app/workers/attendance_summaries_worker.py
 - app/workers/camera_worker.py (future placeholder)
 
 ### Relationships
@@ -718,7 +718,7 @@ face-recognition-attendance-system/
 │   └── workers/
 │       ├── enrollment_worker.py
 │       ├── recognition_worker.py
-│       ├── attendance_worker.py
+│       ├── attendance_summaries_worker.py
 │       └── camera_worker.py
 ├── database/
 │   └── migrations/

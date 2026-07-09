@@ -74,3 +74,20 @@ class Employee(BaseModel):
         back_populates="employee",
         cascade="all, delete-orphan"
     )
+
+    attendances = relationship(
+        "Attendance",
+        back_populates="employee",
+    )
+
+    attendance_logs = relationship(
+        "AttendanceLog",
+        back_populates="employee",
+        cascade="all, delete-orphan",
+    )
+
+    attendance_summaries = relationship(
+        "AttendanceSummary",
+        back_populates="employee",
+        cascade="all, delete-orphan",
+    )

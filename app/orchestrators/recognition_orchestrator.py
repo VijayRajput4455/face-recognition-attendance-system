@@ -2,6 +2,7 @@ import numpy as np
 
 from app.core.logger import get_logger
 from app.core.database import SessionLocal
+from app.orchestrators.attendance_logs_orchestrator import AttendanceLogsOrchestrator
 from app.repositories.employee_repo import EmployeeRepository
 from app.schemas.recognition import RecognitionResponse
 from app.services.recognition_service import RecognitionService
@@ -20,6 +21,8 @@ class RecognitionOrchestrator:
         self.recognition_service = RecognitionService()
 
         self.employee_repository = EmployeeRepository()
+
+        self.attendance_logs_orchestrator = AttendanceLogsOrchestrator()
 
     # ==========================================================
     # Public API
@@ -129,6 +132,24 @@ class RecognitionOrchestrator:
                     phone=employee.phone,
 
                 )
+
+                try:
+
+                    self.attendance_logs_orchestrator.create_log_for_recognition(
+                        employee_id=employee.id,
+                        recognition_score=(1.0 - float(result.distance)),
+                        recognition_type="FACE",
+                    )
+
+                except Exception:
+
+                    logger.exception(
+                        "Failed to create attendance log from recognition.",
+                        extra={
+                            "employee_id": str(employee.id),
+                            "employee_code": employee.employee_code,
+                        },
+                    )
 
         finally:
 
