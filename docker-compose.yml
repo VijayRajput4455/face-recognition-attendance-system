@@ -18,6 +18,27 @@ version: "3.9"
 services:
 
   # ========================================================
+  # React Frontend Web Application
+  # ========================================================
+
+  frontend:
+
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+
+    container_name: face-recognition-frontend
+
+    ports:
+      - "5173:80"
+
+    depends_on:
+      - api
+
+    networks:
+      - face-network
+
+  # ========================================================
   # FastAPI Application
   # ========================================================
 
