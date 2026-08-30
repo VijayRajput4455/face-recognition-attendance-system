@@ -11,6 +11,7 @@ import StatCard from '../../components/ui/StatCard';
 import SearchInput from '../../components/ui/SearchInput';
 import Drawer from '../../components/ui/Drawer';
 import MonthlyReportModal from './MonthlyReportModal';
+import PageBanner from '../../components/ui/PageBanner';
 import {
   formatDate,
   formatTime,
@@ -295,25 +296,31 @@ export function AttendancePage() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Attendance & Records</h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Track daily presence summaries, live facial recognition events, and export monthly reports.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setIsReportModalOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl shadow-2xs transition-all cursor-pointer"
-          >
-            <FileText className="w-4 h-4 text-indigo-600" />
-            Monthly Report
-          </button>
-        </div>
-      </div>
+      {/* Hero Header */}
+      <PageBanner
+        badge="Attendance Hub"
+        badgeIcon={CalendarCheck2}
+        title="Attendance & Recognition Stream"
+        description="Track daily workforce presence summaries, real-time facial recognition verification logs, and generate monthly reports."
+        actions={
+          <>
+            <button
+              onClick={() => navigate('recognition')}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 active:bg-white/30 text-white text-xs font-semibold backdrop-blur-md border border-white/10 transition-all cursor-pointer"
+            >
+              <ScanFace className="w-4 h-4 text-indigo-300" />
+              Live Recognition
+            </button>
+            <button
+              onClick={() => setIsReportModalOpen(true)}
+              className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-semibold text-indigo-950 bg-white hover:bg-indigo-50 active:bg-indigo-100 rounded-xl shadow-md transition-all cursor-pointer"
+            >
+              <FileText className="w-4 h-4 text-indigo-600" />
+              Monthly Report
+            </button>
+          </>
+        }
+      />
 
       {/* View Switcher Tabs */}
       <div className="flex items-center gap-2 border-b border-slate-200 pb-1">

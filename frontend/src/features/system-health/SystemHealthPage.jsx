@@ -8,6 +8,7 @@ import DataTable from '../../components/ui/DataTable';
 import StatusBadge from '../../components/ui/StatusBadge';
 import StatCard from '../../components/ui/StatCard';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import PageBanner from '../../components/ui/PageBanner';
 import { getInitials, getAvatarColor } from '../../lib/utils';
 import {
   Activity,
@@ -121,25 +122,22 @@ export function SystemHealthPage() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-200">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
-            <Activity className="w-6 h-6 text-indigo-600" /> AI Engine & Infrastructure Health
-          </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Monitor Milvus vector database clustering, InsightFace inference engine, and biometric collections.
-          </p>
-        </div>
-
-        <button
-          onClick={handleRefreshAll}
-          className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl shadow-2xs transition-all cursor-pointer"
-        >
-          <RefreshCw className="w-4 h-4" />
-          Refresh Diagnostics
-        </button>
-      </div>
+      {/* Hero Header */}
+      <PageBanner
+        badge="System Diagnostics"
+        badgeIcon={Activity}
+        title="AI Engine & Infrastructure Health"
+        description="Monitor Milvus vector database clustering, InsightFace inference engine metrics, and biometric collection status."
+        actions={
+          <button
+            onClick={handleRefreshAll}
+            className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-semibold text-indigo-950 bg-white hover:bg-indigo-50 active:bg-indigo-100 rounded-xl shadow-md transition-all cursor-pointer"
+          >
+            <RefreshCw className="w-4 h-4 text-indigo-600" />
+            Refresh Diagnostics
+          </button>
+        }
+      />
 
       {/* Cluster Overview Grid (3 Cards) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

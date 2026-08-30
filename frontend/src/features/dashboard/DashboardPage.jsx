@@ -8,6 +8,9 @@ import { departmentsApi } from '../../api/departments';
 import { useNavigation } from '../../context/NavigationContext';
 import StatCard from '../../components/ui/StatCard';
 import StatusBadge from '../../components/ui/StatusBadge';
+import LoadingSkeleton from '../../components/ui/LoadingSkeleton';
+import EmptyState from '../../components/ui/EmptyState';
+import PageBanner from '../../components/ui/PageBanner';
 import { formatTime, formatDateTime, formatConfidence, getInitials, getAvatarColor } from '../../lib/utils';
 import {
   Users,
@@ -140,40 +143,31 @@ export function DashboardPage() {
   return (
     <div className="space-y-8 animate-in fade-in duration-200">
       {/* Top Banner & Greetings */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-gradient-to-r from-indigo-900 via-indigo-800 to-slate-900 text-white p-6 sm:p-8 rounded-3xl shadow-lg relative overflow-hidden">
-        {/* Subtle decorative background lights */}
-        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-1/3 -mb-16 w-48 h-48 bg-sky-500/20 rounded-full blur-2xl pointer-events-none" />
-
-        <div className="relative z-10 space-y-1.5 max-w-xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-indigo-200 text-xs font-semibold backdrop-blur-md mb-2">
-            <Sparkles className="w-3.5 h-3.5 text-indigo-300" />
-            AI-Powered Workforce Platform
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">Good morning, Admin</h1>
-          <p className="text-xs sm:text-sm text-indigo-100/80 leading-relaxed font-normal">
-            Here's what's happening across your workforce, attendance streams, and biometric recognition pipelines today.
-          </p>
-        </div>
-
-        <div className="relative z-10 flex items-center gap-3">
-          <button
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 active:bg-white/30 text-white text-xs font-semibold backdrop-blur-md border border-white/10 transition-all cursor-pointer disabled:opacity-50"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
-            Refresh
-          </button>
-          <button
-            onClick={() => navigate('recognition')}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-indigo-950 hover:bg-indigo-50 active:bg-indigo-100 text-xs font-semibold shadow-md transition-all cursor-pointer"
-          >
-            <ScanFace className="w-4 h-4 text-indigo-600" />
-            Live Recognition
-          </button>
-        </div>
-      </div>
+      <PageBanner
+        badge="AI-Powered Workforce Platform"
+        badgeIcon={Sparkles}
+        title="Good morning, Admin"
+        description="Here's what's happening across your workforce, attendance streams, and biometric recognition pipelines today."
+        actions={
+          <>
+            <button
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 active:bg-white/30 text-white text-xs font-semibold backdrop-blur-md border border-white/10 transition-all cursor-pointer disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+              Refresh
+            </button>
+            <button
+              onClick={() => navigate('recognition')}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-indigo-950 hover:bg-indigo-50 active:bg-indigo-100 text-xs font-semibold shadow-md transition-all cursor-pointer"
+            >
+              <ScanFace className="w-4 h-4 text-indigo-600" />
+              Live Recognition
+            </button>
+          </>
+        }
+      />
 
       {/* Top KPI Cards (6 metrics) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">

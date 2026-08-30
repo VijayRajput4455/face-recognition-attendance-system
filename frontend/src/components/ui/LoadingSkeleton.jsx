@@ -42,3 +42,5 @@ export function CardSkeleton() {
     </div>
   );
 }
+
+export default Skeleton;

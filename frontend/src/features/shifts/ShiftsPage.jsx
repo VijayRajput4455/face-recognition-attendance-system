@@ -5,6 +5,7 @@ import { employeesApi } from '../../api/employees';
 import { useToast } from '../../context/ToastContext';
 import Modal from '../../components/ui/Modal';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import PageBanner from '../../components/ui/PageBanner';
 import { Clock, Plus, Edit2, Trash2, Users, Loader2, Sparkles } from 'lucide-react';
 
 export function ShiftsPage() {
@@ -120,23 +121,22 @@ export function ShiftsPage() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Work Shifts & Schedules</h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Configure work operating hours, late arrival grace windows, and shift rosters.
-          </p>
-        </div>
-
-        <button
-          onClick={handleOpenCreate}
-          className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-xl shadow-xs transition-all cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          Add Shift
-        </button>
-      </div>
+      {/* Hero Header */}
+      <PageBanner
+        badge="Shift Scheduling"
+        badgeIcon={Clock}
+        title="Work Shifts & Schedules"
+        description="Configure standard shift operational hours, late arrival grace windows, and roster allocations."
+        actions={
+          <button
+            onClick={handleOpenCreate}
+            className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-semibold text-indigo-950 bg-white hover:bg-indigo-50 active:bg-indigo-100 rounded-xl shadow-md transition-all cursor-pointer"
+          >
+            <Plus className="w-4 h-4 text-indigo-600" />
+            Add Shift
+          </button>
+        }
+      />
 
       {/* Grid of Shift Cards */}
       {loadingShifts ? (

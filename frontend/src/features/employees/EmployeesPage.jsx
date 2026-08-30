@@ -11,6 +11,7 @@ import StatusBadge from '../../components/ui/StatusBadge';
 import SearchInput from '../../components/ui/SearchInput';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import EmployeeDrawer from './EmployeeDrawer';
+import PageBanner from '../../components/ui/PageBanner';
 import { getInitials, getAvatarColor, formatDate } from '../../lib/utils';
 import {
   UserPlus,
@@ -306,26 +307,34 @@ export function EmployeesPage() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
-      {/* Header & Main Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Workforce Roster</h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Manage registered employees, organization placement, and facial biometric profiles.
-          </p>
-        </div>
-
-        <button
-          onClick={() => {
-            setSelectedEmployee(null);
-            setDrawerOpen(true);
-          }}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-xl shadow-xs transition-all cursor-pointer"
-        >
-          <UserPlus className="w-4 h-4" />
-          Add Employee
-        </button>
-      </div>
+      {/* Hero Header */}
+      <PageBanner
+        badge="Workforce Management"
+        badgeIcon={Users}
+        title="Workforce Directory"
+        description="Manage registered employees, organizational structure assignments, and biometric profiles."
+        actions={
+          <>
+            <button
+              onClick={() => navigate('recognition')}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 active:bg-white/30 text-white text-xs font-semibold backdrop-blur-md border border-white/10 transition-all cursor-pointer"
+            >
+              <ScanFace className="w-4 h-4 text-indigo-300" />
+              Live Recognition
+            </button>
+            <button
+              onClick={() => {
+                setSelectedEmployee(null);
+                setDrawerOpen(true);
+              }}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold text-indigo-950 bg-white hover:bg-indigo-50 active:bg-indigo-100 rounded-xl shadow-md transition-all cursor-pointer"
+            >
+              <UserPlus className="w-4 h-4 text-indigo-600" />
+              Add Employee
+            </button>
+          </>
+        }
+      />
 
       {/* Filter & Search Bar */}
       <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">

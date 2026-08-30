@@ -7,6 +7,7 @@ import { useToast } from '../../context/ToastContext';
 import DataTable from '../../components/ui/DataTable';
 import StatusBadge from '../../components/ui/StatusBadge';
 import SearchInput from '../../components/ui/SearchInput';
+import PageBanner from '../../components/ui/PageBanner';
 import EnrollmentWizard from './EnrollmentWizard';
 import { getInitials, getAvatarColor } from '../../lib/utils';
 import { Video, RotateCcw, Plus, Play, CheckCircle2, AlertCircle, Sparkles } from 'lucide-react';
@@ -150,23 +151,22 @@ export function EnrollmentsListPage() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Biometric Enrollment Pipeline</h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Monitor asynchronous face extraction, embedding generation, and vector indexing jobs.
-          </p>
-        </div>
-
-        <button
-          onClick={() => navigate('enrollments', { mode: 'wizard' })}
-          className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-xl shadow-xs transition-all cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          Enroll Face Biometrics
-        </button>
-      </div>
+      {/* Hero Header */}
+      <PageBanner
+        badge="Biometric Pipeline"
+        badgeIcon={Sparkles}
+        title="Biometric Enrollment Pipeline"
+        description="Monitor asynchronous face extraction, embedding generation, and Milvus vector indexing jobs."
+        actions={
+          <button
+            onClick={() => navigate('enrollments', { mode: 'wizard' })}
+            className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-semibold text-indigo-950 bg-white hover:bg-indigo-50 active:bg-indigo-100 rounded-xl shadow-md transition-all cursor-pointer"
+          >
+            <Plus className="w-4 h-4 text-indigo-600" />
+            Enroll Face Biometrics
+          </button>
+        }
+      />
 
       {/* Search & Filter Bar */}
       <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-3">

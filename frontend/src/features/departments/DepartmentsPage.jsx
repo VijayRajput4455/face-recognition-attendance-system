@@ -5,6 +5,7 @@ import { employeesApi } from '../../api/employees';
 import { useToast } from '../../context/ToastContext';
 import Modal from '../../components/ui/Modal';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import PageBanner from '../../components/ui/PageBanner';
 import { Building2, Plus, Edit2, Trash2, Users, Loader2 } from 'lucide-react';
 
 export function DepartmentsPage() {
@@ -106,23 +107,22 @@ export function DepartmentsPage() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Departments</h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Organize workforce segments and monitor department attendance rates.
-          </p>
-        </div>
-
-        <button
-          onClick={handleOpenCreate}
-          className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-xl shadow-xs transition-all cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          Add Department
-        </button>
-      </div>
+      {/* Hero Header */}
+      <PageBanner
+        badge="Organizational Structure"
+        badgeIcon={Building2}
+        title="Workforce Departments"
+        description="Organize business units, team divisions, and monitor workforce distributions across departments."
+        actions={
+          <button
+            onClick={handleOpenCreate}
+            className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-semibold text-indigo-950 bg-white hover:bg-indigo-50 active:bg-indigo-100 rounded-xl shadow-md transition-all cursor-pointer"
+          >
+            <Plus className="w-4 h-4 text-indigo-600" />
+            Add Department
+          </button>
+        }
+      />
 
       {/* Grid of Department Cards */}
       {loadingDepts ? (

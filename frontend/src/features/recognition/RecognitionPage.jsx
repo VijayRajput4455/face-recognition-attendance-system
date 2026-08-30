@@ -4,6 +4,7 @@ import { recognitionApi } from '../../api/recognition';
 import { useToast } from '../../context/ToastContext';
 import { useNavigation } from '../../context/NavigationContext';
 import StatusBadge from '../../components/ui/StatusBadge';
+import PageBanner from '../../components/ui/PageBanner';
 import { formatConfidence, getInitials, getAvatarColor } from '../../lib/utils';
 import {
   ScanFace,
@@ -126,46 +127,43 @@ export function RecognitionPage() {
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto animate-in fade-in duration-200">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
-            <ScanFace className="w-6 h-6 text-indigo-600" /> Face Recognition Studio
-          </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Perform real-time biometric identification against enrolled employee vectors.
-          </p>
-        </div>
+      {/* Hero Header */}
+      <PageBanner
+        badge="Computer Vision Studio"
+        badgeIcon={ScanFace}
+        title="Face Recognition Studio"
+        description="Perform real-time biometric identification and verification against enrolled employee vectors."
+        actions={
+          <>
+            {!isCameraActive ? (
+              <button
+                onClick={startCamera}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 active:bg-white/30 text-white text-xs font-semibold backdrop-blur-md border border-white/10 transition-all cursor-pointer"
+              >
+                <Camera className="w-4 h-4 text-indigo-300" />
+                Use Webcam
+              </button>
+            ) : (
+              <button
+                onClick={stopCamera}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-rose-500/80 hover:bg-rose-500 text-white text-xs font-semibold backdrop-blur-md transition-all cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+                Close Camera
+              </button>
+            )}
 
-        <div className="flex items-center gap-2">
-          {!isCameraActive ? (
-            <button
-              onClick={startCamera}
-              className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl shadow-2xs transition-all cursor-pointer"
-            >
-              <Camera className="w-4 h-4 text-indigo-600" />
-              Use Webcam
-            </button>
-          ) : (
-            <button
-              onClick={stopCamera}
-              className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-rose-600 bg-rose-50 border border-rose-200 hover:bg-rose-100 rounded-xl transition-all cursor-pointer"
-            >
-              <X className="w-4 h-4" />
-              Close Camera
-            </button>
-          )}
-
-          {imagePreview && (
-            <button
-              onClick={handleReset}
-              className="px-3 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
-            >
-              Clear
-            </button>
-          )}
-        </div>
-      </div>
+            {imagePreview && (
+              <button
+                onClick={handleReset}
+                className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-semibold text-indigo-950 bg-white hover:bg-indigo-50 active:bg-indigo-100 rounded-xl shadow-md transition-all cursor-pointer"
+              >
+                Clear Photo
+              </button>
+            )}
+          </>
+        }
+      />
 
       {/* Main Workspace Layout (2 columns: Studio canvas + Recognition Results) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
