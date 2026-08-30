@@ -1,56 +1,70 @@
-import React, { useState } from 'react';
-import { Navbar } from './components/Navbar';
-import { Sidebar } from './components/Sidebar';
+import React from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ToastProvider } from './context/ToastContext';
+import { NavigationProvider, useNavigation } from './context/NavigationContext';
+import AppLayout from './components/layout/AppLayout';
 
-import { Dashboard } from './pages/Dashboard';
-import { Recognition } from './pages/Recognition';
-import { Attendance } from './pages/Attendance';
-import { Employees } from './pages/Employees';
-import { Enrollment } from './pages/Enrollment';
-import { AccessControl } from './pages/AccessControl';
-import { SystemAdmin } from './pages/SystemAdmin';
+import DashboardPage from './features/dashboard/DashboardPage';
+import EmployeesPage from './features/employees/EmployeesPage';
+import EmployeeProfile from './features/employees/EmployeeProfile';
+import DepartmentsPage from './features/departments/DepartmentsPage';
+import ShiftsPage from './features/shifts/ShiftsPage';
+import AttendancePage from './features/attendance/AttendancePage';
+import RecognitionPage from './features/recognition/RecognitionPage';
+import EnrollmentsListPage from './features/enrollments/EnrollmentsListPage';
+import SystemHealthPage from './features/system-health/SystemHealthPage';
 
-export function App() {
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [darkMode, setDarkMode] = useState(false);
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 30, // 30 seconds
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
-  const renderContent = () => {
-    switch (activeTab) {
+function AppRouter() {
+  const { currentPage } = useNavigation();
+
+  const renderCurrentPage = () => {
+    switch (currentPage) {
       case 'dashboard':
-        return <Dashboard setActiveTab={setActiveTab} />;
-      case 'recognition':
-        return <Recognition />;
-      case 'attendance':
-        return <Attendance />;
+        return <DashboardPage />;
       case 'employees':
-        return <Employees setActiveTab={setActiveTab} />;
-      case 'enrollment':
-        return <Enrollment />;
-      case 'access':
-        return <AccessControl />;
-      case 'devices':
-      case 'system':
-      case 'settings':
-        return <SystemAdmin />;
+        return <EmployeesPage />;
+      case 'employee-profile':
+        return <EmployeeProfile />;
+      case 'departments':
+        return <DepartmentsPage />;
+      case 'shifts':
+        return <ShiftsPage />;
+      case 'attendance':
+        return <AttendancePage />;
+      case 'recognition':
+        return <RecognitionPage />;
+      case 'enrollments':
+      case 'enrollment-wizard':
+        return <EnrollmentsListPage />;
+      case 'system-health':
+        return <SystemHealthPage />;
       default:
-        return <Dashboard setActiveTab={setActiveTab} />;
+        return <DashboardPage />;
     }
   };
 
-  return (
-    <div className="min-h-screen bg-[#f8fafc] text-slate-900 flex font-sans">
-      {/* Left Sidebar */}
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+  return <AppLayout>{renderCurrentPage()}</AppLayout>;
+}
 
-      {/* Main Right Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
-        <Navbar darkMode={darkMode} setDarkMode={setDarkMode} />
-        
-        <main className="flex-1 p-6 w-full overflow-y-auto">
-          {renderContent()}
-        </main>
-      </div>
-    </div>
+export function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ToastProvider>
+        <NavigationProvider>
+          <AppRouter />
+        </NavigationProvider>
+      </ToastProvider>
+    </QueryClientProvider>
   );
 }
 

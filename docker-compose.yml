@@ -1,4 +1,3 @@
-version: "3.9"
 
 # ==========================================================
 # FACE RECOGNITION SYSTEM
@@ -28,9 +27,6 @@ services:
       dockerfile: Dockerfile
 
     container_name: face-recognition-frontend
-
-    ports:
-      - "5173:80"
 
     depends_on:
       - api
@@ -159,7 +155,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "pg_isready -U ${POSTGRES_USER}"
+          "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"
         ]
 
       interval: 10s

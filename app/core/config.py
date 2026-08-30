@@ -46,11 +46,11 @@ class Settings(BaseSettings):
     # Milvus
     # ==========================================================
 
-    MILVUS_URI: str
-    MILVUS_COLLECTION: str
-    MILVUS_DIMENSION: int
-    MILVUS_METRIC_TYPE: str
-    MILVUS_INDEX_TYPE: str
+    MILVUS_URI: str = "http://milvus:19530"
+    MILVUS_COLLECTION: str = "employee_face_embeddings"
+    MILVUS_DIMENSION: int = 512
+    MILVUS_METRIC_TYPE: str = "COSINE"
+    MILVUS_INDEX_TYPE: str = "HNSW"
     MILVUS_USERNAME: str | None = None
     MILVUS_PASSWORD: str | None = None
 
