@@ -126,7 +126,7 @@ export function RecognitionPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto animate-in fade-in duration-200">
+    <div className="space-y-6 w-full animate-in fade-in duration-200">
       {/* Hero Header */}
       <PageBanner
         badge="Computer Vision Studio"

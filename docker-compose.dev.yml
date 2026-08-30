@@ -28,6 +28,9 @@ services:
     ports:
       - "5173:5173"
 
+    environment:
+      - VITE_BACKEND_TARGET=http://api:8000
+
     volumes:
       - ./frontend:/app
       - /app/node_modules

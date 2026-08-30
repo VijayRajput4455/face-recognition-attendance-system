@@ -1,0 +1,253 @@
+# ==========================================================
+# FACE RECOGNITION ATTENDANCE SYSTEM - LOCAL ALL-IN-ONE COMPOSE
+#
+# Usage:
+#   docker compose -f docker-compose.local.yml up --build -d
+#
+# Access:
+#   - Frontend UI & API:  http://localhost:5173
+#   - Swagger API Docs:   http://localhost:8000/docs
+#   - RabbitMQ Panel:     http://localhost:15672 (admin / adminpassword)
+#   - MinIO Console:      http://localhost:9000 (minioadmin / minioadmin)
+# ==========================================================
+
+services:
+
+  # ========================================================
+  # 1. Frontend Web App (React + Vite)
+  # ========================================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: face-recognition-frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_BACKEND_TARGET=http://api:8000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - api
+    networks:
+      - face-network
+    restart: unless-stopped
+
+  # ========================================================
+  # 2. FastAPI Backend Application
+  # ========================================================
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: face-recognition-api
+    ports:
+      - "8000:8000"
+    environment:
+      APP_NAME: "Face Recognition Attendance System"
+      APP_ENV: development
+      LOG_LEVEL: INFO
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: face_user
+      POSTGRES_PASSWORD: face_password
+      POSTGRES_DB: face_db
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: admin
+      RABBITMQ_PASSWORD: adminpassword
+      MILVUS_URI: http://milvus:19530
+      MILVUS_COLLECTION: employee_face_embeddings
+      MILVUS_DIMENSION: 512
+      MILVUS_METRIC_TYPE: COSINE
+      MILVUS_INDEX_TYPE: HNSW
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      INSIGHTFACE_GPU_ID: -1
+    volumes:
+      - .:/app
+    command:
+      - sh
+      - -c
+      - "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      milvus:
+        condition: service_started
+    networks:
+      - face-network
+    restart: unless-stopped
+
+  # ========================================================
+  # 3. Asynchronous Biometric Video Worker
+  # ========================================================
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: face-recognition-worker
+    environment:
+      APP_NAME: "Face Recognition Enrollment Worker"
+      APP_ENV: development
+      LOG_LEVEL: INFO
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: face_user
+      POSTGRES_PASSWORD: face_password
+      POSTGRES_DB: face_db
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: admin
+      RABBITMQ_PASSWORD: adminpassword
+      MILVUS_URI: http://milvus:19530
+      MILVUS_COLLECTION: employee_face_embeddings
+      MILVUS_DIMENSION: 512
+      MILVUS_METRIC_TYPE: COSINE
+      MILVUS_INDEX_TYPE: HNSW
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      INSIGHTFACE_GPU_ID: -1
+    volumes:
+      - .:/app
+    command: ["python", "-m", "app.workers.enrollment_worker"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      milvus:
+        condition: service_started
+    networks:
+      - face-network
+    restart: unless-stopped
+
+  # ========================================================
+  # 4. PostgreSQL Database
+  # ========================================================
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: face_db
+      POSTGRES_USER: face_user
+      POSTGRES_PASSWORD: face_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U face_user -d face_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - face-network
+    restart: unless-stopped
+
+  # ========================================================
+  # 5. RabbitMQ Message Broker
+  # ========================================================
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: adminpassword
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - face-network
+    restart: unless-stopped
+
+  # ========================================================
+  # 6. Milvus Vector Database
+  # ========================================================
+  milvus:
+    image: milvusdb/milvus:v2.4.4
+    container_name: milvus-standalone
+    command: ["milvus", "run", "standalone"]
+    environment:
+      ETCD_ENDPOINTS: etcd:2379
+      MINIO_ADDRESS: minio:9000
+    volumes:
+      - milvus_data:/var/lib/milvus
+    ports:
+      - "19530:19530"
+      - "9091:9091"
+    depends_on:
+      - etcd
+      - minio
+    networks:
+      - face-network
+    restart: unless-stopped
+
+  # ========================================================
+  # 7. ETCD for Milvus Coordination
+  # ========================================================
+  etcd:
+    image: quay.io/coreos/etcd:v3.5.5
+    container_name: milvus-etcd
+    environment:
+      - ETCD_AUTO_COMPACTION_MODE=revision
+      - ETCD_AUTO_COMPACTION_RETENTION=1000
+      - ETCD_QUOTA_BACKEND_BYTES=4294967296
+      - ETCD_SNAPSHOT_COUNT=50000
+    volumes:
+      - etcd_data:/etcd
+    command: etcd --advertise-client-urls=http://127.0.0.1:2379 --listen-client-urls=http://0.0.0.0:2379 --data-dir=/etcd
+    networks:
+      - face-network
+    restart: unless-stopped
+
+  # ========================================================
+  # 8. MinIO Object Storage for Milvus
+  # ========================================================
+  minio:
+    image: minio/minio:RELEASE.2023-03-20T20-16-18Z
+    container_name: milvus-minio
+    environment:
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+    ports:
+      - "9000:9000"
+    volumes:
+      - minio_data:/minio_data
+    command: minio server /minio_data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - face-network
+    restart: unless-stopped
+
+# ==========================================================
+# Volumes
+# ==========================================================
+volumes:
+  postgres_data:
+  rabbitmq_data:
+  milvus_data:
+  etcd_data:
+  minio_data:
+
+# ==========================================================
+# Networks
+# ==========================================================
+networks:
+  face-network:
+    name: face-recognition-attendance-system_face-network
+    driver: bridge

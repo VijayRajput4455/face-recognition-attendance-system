@@ -256,7 +256,7 @@ export function EnrollmentWizard() {
   });
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in duration-200">
+    <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in duration-200">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
