@@ -1,129 +1,74 @@
-
 # ==========================================================
-# DEVELOPMENT CONFIGURATION
+# DEVELOPMENT CONFIGURATION OVERRIDE
 #
-# This file overrides docker-compose.yml.
-#
-# Command:
-#
-# docker compose \
-#   -f docker-compose.yml \
-#   -f docker-compose.dev.yml \
-#   up --build
-#
+# Usage:
+#   docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.dev.yml up --build
 # ==========================================================
 
 services:
 
   # ========================================================
-  # Frontend Development
+  # Frontend Development (Vite HMR & Proxy)
   # ========================================================
-
   frontend:
-
     build:
-      context: ./frontend
-      dockerfile: Dockerfile.dev
-
+      context: ..
+      dockerfile: docker/Dockerfile.frontend.dev
     ports:
       - "5173:5173"
-
     environment:
       - VITE_BACKEND_TARGET=http://api:8000
-
     volumes:
-      - ./frontend:/app
+      - ../frontend:/app
       - /app/node_modules
-
     restart: unless-stopped
 
   # ========================================================
-  # FastAPI Development
+  # FastAPI Development (Auto-Reload & Direct Volume)
   # ========================================================
-
   api:
-
-    # Expose FastAPI
     ports:
       - "8000:8000"
-
-    # Mount project directory
-    #
-    # Any code changes on the host are immediately
-    # visible inside the container.
     volumes:
-      - .:/app
-
-    # Auto reload when code changes
+      - ..:/app
     command:
       - sh
       - -c
       - alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-
     restart: unless-stopped
 
   # ========================================================
   # Worker Development
   # ========================================================
-
   worker:
-
-    # Worker also sees live code changes
     volumes:
-      - .:/app
-
+      - ..:/app
     restart: unless-stopped
 
   # ========================================================
-  # PostgreSQL
+  # Ports for local tool access
   # ========================================================
-
   postgres:
-
     ports:
       - "5432:5432"
-
     restart: unless-stopped
 
-  # ========================================================
-  # RabbitMQ
-  # ========================================================
-
   rabbitmq:
-
     ports:
       - "5672:5672"
       - "15672:15672"
-
     restart: unless-stopped
-
-  # ========================================================
-  # MinIO
-  # ========================================================
 
   minio:
-
     ports:
       - "9000:9000"
-
     restart: unless-stopped
 
-  # ========================================================
-  # Milvus
-  # ========================================================
-
   milvus:
-
     ports:
       - "19530:19530"
       - "9091:9091"
-
     restart: unless-stopped
 
-  # ========================================================
-  # ETCD
-  # ========================================================
-
   etcd:
-
     restart: unless-stopped

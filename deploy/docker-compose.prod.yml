@@ -1,30 +1,19 @@
-
 # ==========================================================
-# PRODUCTION CONFIGURATION
-#
-# This file extends docker-compose.yml.
+# PRODUCTION CONFIGURATION OVERRIDE
 #
 # Usage:
-#
-# docker compose \
-#   -f docker-compose.yml \
-#   -f docker-compose.prod.yml \
-#   up -d
-#
+#   docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.prod.yml up --build -d
 # ==========================================================
 
 services:
 
   # ========================================================
-  # Frontend Web App
+  # Frontend Web App (Nginx on Port 80 / 5173)
   # ========================================================
   frontend:
-
     ports:
       - "5173:80"
-
     restart: always
-
     logging:
       driver: json-file
       options:
@@ -32,22 +21,12 @@ services:
         max-file: "10"
 
   # ========================================================
-  # FastAPI API
+  # FastAPI API (Gunicorn / Production settings)
   # ========================================================
   api:
-
-    # Expose API
     ports:
       - "8000:8000"
-
-    # Restart automatically
     restart: always
-
-    # Prevent privilege escalation
-    security_opt:
-      - no-new-privileges:true
-
-    # Rotate Docker logs
     logging:
       driver: json-file
       options:
@@ -55,15 +34,10 @@ services:
         max-file: "10"
 
   # ========================================================
-  # Enrollment Worker
+  # Worker
   # ========================================================
   worker:
-
     restart: always
-
-    security_opt:
-      - no-new-privileges:true
-
     logging:
       driver: json-file
       options:
@@ -71,80 +45,42 @@ services:
         max-file: "10"
 
   # ========================================================
-  # PostgreSQL
+  # Backend Services
   # ========================================================
   postgres:
-
     restart: always
-
     logging:
       driver: json-file
       options:
         max-size: "100m"
         max-file: "10"
 
-  # ========================================================
-  # RabbitMQ
-  # ========================================================
   rabbitmq:
-
-    # RabbitMQ Broker
-    ports:
-      - "5672:5672"
-
-      # RabbitMQ Management UI
-      - "15672:15672"
-
     restart: always
-
     logging:
       driver: json-file
       options:
         max-size: "100m"
         max-file: "10"
 
-  # ========================================================
-  # ETCD
-  # ========================================================
-  etcd:
-
-    restart: always
-
-    logging:
-      driver: json-file
-      options:
-        max-size: "100m"
-        max-file: "10"
-
-  # ========================================================
-  # MinIO
-  # ========================================================
-  minio:
-
-    ports:
-      - "9000:9000"
-
-    restart: always
-
-    logging:
-      driver: json-file
-      options:
-        max-size: "100m"
-        max-file: "10"
-
-  # ========================================================
-  # Milvus
-  # ========================================================
   milvus:
-
-    ports:
-      - "19530:19530"
-
-      # Monitoring
-      - "9091:9091"
-
     restart: always
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "10"
 
+  etcd:
+    restart: always
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "10"
+
+  minio:
+    restart: always
     logging:
       driver: json-file
       options:
