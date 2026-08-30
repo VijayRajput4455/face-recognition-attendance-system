@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { employeesApi } from '../../api/employees';
 import { departmentsApi } from '../../api/departments';
+import { designationsApi } from '../../api/designations';
 import { shiftsApi } from '../../api/shifts';
 import { enrollmentsApi } from '../../api/enrollments';
 import { attendanceApi } from '../../api/attendance';
@@ -27,6 +28,7 @@ import {
   Phone,
   Calendar,
   Building2,
+  Briefcase,
   Clock,
   ScanFace,
   Video,
@@ -63,6 +65,13 @@ export function EmployeeProfile() {
     queryKey: ['department', employee?.department_id],
     queryFn: () => departmentsApi.getById(employee.department_id),
     enabled: Boolean(employee?.department_id),
+  });
+
+  // 2.1 Fetch Designation
+  const { data: designation } = useQuery({
+    queryKey: ['designation', employee?.designation_id],
+    queryFn: () => designationsApi.getById(employee.designation_id),
+    enabled: Boolean(employee?.designation_id),
   });
 
   // 3. Fetch Shift
@@ -186,6 +195,10 @@ export function EmployeeProfile() {
                   {department?.department_name || 'No department assigned'}
                 </span>
                 <span className="flex items-center gap-1.5">
+                  <Briefcase className="w-3.5 h-3.5 text-slate-400" />
+                  {designation?.designation_name || 'No designation assigned'}
+                </span>
+                <span className="flex items-center gap-1.5">
                   <Clock className="w-3.5 h-3.5 text-slate-400" />
                   {shift ? `${shift.shift_name} (${shift.start_time} - ${shift.end_time})` : 'Default Shift'}
                 </span>
@@ -285,6 +298,12 @@ export function EmployeeProfile() {
                 <span className="text-slate-500 font-medium">Department</span>
                 <span className="text-slate-900 font-semibold">
                   {department?.department_name || 'Unassigned Department'}
+                </span>
+              </div>
+              <div className="flex justify-between py-1">
+                <span className="text-slate-500 font-medium">Designation</span>
+                <span className="text-slate-900 font-semibold">
+                  {designation?.designation_name || 'Unassigned Designation'}
                 </span>
               </div>
               <div className="flex justify-between py-1">

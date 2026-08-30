@@ -8,6 +8,7 @@ export const NAV_ITEMS = [
   // Workforce
   { id: 'employees', label: 'Employees', group: 'WORKFORCE' },
   { id: 'departments', label: 'Departments', group: 'WORKFORCE' },
+  { id: 'designations', label: 'Designations', group: 'WORKFORCE' },
   { id: 'shifts', label: 'Shifts', group: 'WORKFORCE' },
   // Attendance
   { id: 'attendance', label: 'Attendance', group: 'ATTENDANCE' },

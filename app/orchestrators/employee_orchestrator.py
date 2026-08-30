@@ -68,6 +68,8 @@ class EmployeeOrchestrator:
 
                 department_id=request.department_id,
 
+                designation_id=request.designation_id,
+
                 shift_id=request.shift_id,
 
                 employment_status="PENDING",
@@ -202,6 +204,8 @@ class EmployeeOrchestrator:
             employee.phone = request.phone
 
             employee.department_id = request.department_id
+
+            employee.designation_id = request.designation_id
 
             employee.shift_id = request.shift_id
 

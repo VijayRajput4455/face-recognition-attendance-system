@@ -5,6 +5,7 @@ import {
   LayoutDashboard,
   Users,
   Building2,
+  Briefcase,
   Clock,
   CalendarCheck2,
   ScanFace,
@@ -30,6 +31,7 @@ export function Sidebar() {
       items: [
         { id: 'employees', label: 'Employees', icon: Users },
         { id: 'departments', label: 'Departments', icon: Building2 },
+        { id: 'designations', label: 'Designations', icon: Briefcase },
         { id: 'shifts', label: 'Shifts', icon: Clock },
       ],
     },

@@ -20,6 +20,10 @@ from app.api.v1.endpoints.shift import (
     router as shift_router,
 )
 
+from app.api.v1.endpoints.designation import (
+    router as designation_router,
+)
+
 from app.api.v1.endpoints import enrollment
 from app.api.v1.endpoints import attendance_logs
 from app.api.v1.endpoints import attendance_summaries
@@ -55,6 +59,12 @@ api_router.include_router(
     shift_router,
     prefix="/shifts",
     tags=["Shifts"],
+)
+
+api_router.include_router(
+    designation_router,
+    prefix="/designations",
+    tags=["Designations"],
 )
 
 api_router.include_router(

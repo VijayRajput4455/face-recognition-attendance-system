@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { employeesApi } from '../../api/employees';
 import { departmentsApi } from '../../api/departments';
+import { designationsApi } from '../../api/designations';
 import { shiftsApi } from '../../api/shifts';
 import { useToast } from '../../context/ToastContext';
 import Drawer from '../../components/ui/Drawer';
@@ -22,6 +23,7 @@ export function EmployeeDrawer({ isOpen, onClose, employee, onEnrollFace }) {
     phone: '',
     joining_date: new Date().toISOString().split('T')[0],
     department_id: '',
+    designation_id: '',
     shift_id: '',
   });
 
@@ -38,6 +40,7 @@ export function EmployeeDrawer({ isOpen, onClose, employee, onEnrollFace }) {
         phone: employee.phone || '',
         joining_date: employee.joining_date || new Date().toISOString().split('T')[0],
         department_id: employee.department_id || '',
+        designation_id: employee.designation_id || '',
         shift_id: employee.shift_id || '',
       });
     } else {
@@ -49,16 +52,23 @@ export function EmployeeDrawer({ isOpen, onClose, employee, onEnrollFace }) {
         phone: '',
         joining_date: new Date().toISOString().split('T')[0],
         department_id: '',
+        designation_id: '',
         shift_id: '',
       });
     }
     setErrors({});
   }, [employee, isOpen]);
 
-  // Fetch departments & shifts for dropdowns
+  // Fetch departments, designations & shifts for dropdowns
   const { data: departments = [] } = useQuery({
     queryKey: ['departments'],
     queryFn: departmentsApi.getAll,
+    enabled: isOpen,
+  });
+
+  const { data: designations = [] } = useQuery({
+    queryKey: ['designations'],
+    queryFn: designationsApi.getAll,
     enabled: isOpen,
   });
 
@@ -122,6 +132,7 @@ export function EmployeeDrawer({ isOpen, onClose, employee, onEnrollFace }) {
       phone: formData.phone.trim() || null,
       joining_date: formData.joining_date,
       department_id: formData.department_id || null,
+      designation_id: formData.designation_id || null,
       shift_id: formData.shift_id || null,
     };
 
@@ -265,7 +276,7 @@ export function EmployeeDrawer({ isOpen, onClose, employee, onEnrollFace }) {
             Workforce Placement
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">Department</label>
               <select
@@ -277,6 +288,22 @@ export function EmployeeDrawer({ isOpen, onClose, employee, onEnrollFace }) {
                 {departments.map((d) => (
                   <option key={d.id} value={d.id}>
                     {d.department_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Designation</label>
+              <select
+                value={formData.designation_id}
+                onChange={(e) => setFormData({ ...formData, designation_id: e.target.value })}
+                className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              >
+                <option value="">Unassigned</option>
+                {designations.map((desig) => (
+                  <option key={desig.id} value={desig.id}>
+                    {desig.designation_name}
                   </option>
                 ))}
               </select>

@@ -4,6 +4,7 @@ from app.core.database import SessionLocal
 from app.core.logger import get_logger
 
 from app.models.department import Department
+from app.models.designation import Designation
 from app.models.shift import Shift
 
 logger = get_logger(__name__)
@@ -103,6 +104,48 @@ def initialize_master_data() -> None:
             "Departments initialized.",
             extra={
                 "inserted": inserted_departments,
+            },
+        )
+
+        # ======================================================
+        # Designations
+        # ======================================================
+
+        designations = [
+            {"designation_name": "Senior Software Engineer", "description": "Lead software developer"},
+            {"designation_name": "AI/ML Engineer", "description": "Machine learning and computer vision developer"},
+            {"designation_name": "HR Manager", "description": "Human resources and talent management"},
+            {"designation_name": "Operations Lead", "description": "Operations and logistics coordinator"},
+            {"designation_name": "Data Analyst", "description": "Business intelligence and data analytics"},
+            {"designation_name": "Product Designer", "description": "UI/UX and product experience design"},
+        ]
+
+        inserted_designations = 0
+
+        for desig in designations:
+            existing = (
+                db.query(Designation)
+                .filter(Designation.designation_name == desig["designation_name"])
+                .first()
+            )
+
+            if existing:
+                continue
+
+            db.add(
+                Designation(
+                    designation_name=desig["designation_name"],
+                    description=desig["description"],
+                )
+            )
+            inserted_designations += 1
+
+        db.commit()
+
+        logger.info(
+            "Designations initialized.",
+            extra={
+                "inserted": inserted_designations,
             },
         )
 

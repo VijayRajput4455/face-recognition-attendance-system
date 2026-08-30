@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { employeesApi } from '../../api/employees';
 import { departmentsApi } from '../../api/departments';
+import { designationsApi } from '../../api/designations';
 import { shiftsApi } from '../../api/shifts';
 import { enrollmentsApi } from '../../api/enrollments';
 import { useNavigation } from '../../context/NavigationContext';
@@ -22,6 +23,7 @@ import {
   Trash2,
   Filter,
   Building2,
+  Briefcase,
   Clock,
   CalendarCheck2,
   Users,
@@ -56,7 +58,13 @@ export function EmployeesPage() {
     queryFn: departmentsApi.getAll,
   });
 
-  // 3. Fetch Shifts
+  // 3. Fetch Designations
+  const { data: designations = [] } = useQuery({
+    queryKey: ['designations'],
+    queryFn: designationsApi.getAll,
+  });
+
+  // 4. Fetch Shifts
   const { data: shifts = [] } = useQuery({
     queryKey: ['shifts'],
     queryFn: shiftsApi.getAll,
@@ -87,6 +95,12 @@ export function EmployeesPage() {
     departments.forEach((d) => map.set(d.id, d.department_name));
     return map;
   }, [departments]);
+
+  const designationMap = useMemo(() => {
+    const map = new Map();
+    designations.forEach((desig) => map.set(desig.id, desig.designation_name));
+    return map;
+  }, [designations]);
 
   const shiftMap = useMemo(() => {
     const map = new Map();
@@ -128,12 +142,14 @@ export function EmployeesPage() {
         return false;
       }
       // Status filter
-      if (selectedStatus && emp.employment_status !== selectedStatus) {
-        return false;
+      if (selectedStatus) {
+        const enrollment = enrollmentMap.get(emp.id);
+        const status = enrollment ? enrollment.status : 'PENDING';
+        if (status !== selectedStatus) return false;
       }
       return true;
     });
-  }, [employees, searchQuery, selectedDepartment, selectedShift, selectedStatus]);
+  }, [employees, searchQuery, selectedDepartment, selectedShift, selectedStatus, enrollmentMap]);
 
   // Handle Edit
   const handleEdit = (emp, e) => {
@@ -182,6 +198,7 @@ export function EmployeesPage() {
         const fullName = `${emp.first_name} ${emp.last_name || ''}`.trim();
         const initials = getInitials(emp.first_name, emp.last_name);
         const avatarColor = getAvatarColor(fullName);
+        const desigName = designationMap.get(emp.designation_id);
 
         return (
           <div className="flex items-center gap-3">
@@ -192,7 +209,10 @@ export function EmployeesPage() {
             </div>
             <div>
               <div className="font-semibold text-slate-900 leading-tight">{fullName}</div>
-              <div className="text-[11px] text-slate-400 font-normal">{emp.email || 'No email registered'}</div>
+              <div className="text-[11px] text-slate-400 font-normal">
+                {desigName ? `${desigName} • ` : ''}
+                {emp.email || 'No email registered'}
+              </div>
             </div>
           </div>
         );
@@ -216,6 +236,21 @@ export function EmployeesPage() {
         const deptName = departmentMap.get(emp.department_id);
         return deptName ? (
           <span className="text-slate-800 font-medium">{deptName}</span>
+        ) : (
+          <span className="text-slate-400 italic">Unassigned</span>
+        );
+      },
+    },
+    {
+      header: 'Designation',
+      accessor: 'designation_id',
+      sortable: true,
+      render: (emp) => {
+        const desigName = designationMap.get(emp.designation_id);
+        return desigName ? (
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200/60">
+            {desigName}
+          </span>
         ) : (
           <span className="text-slate-400 italic">Unassigned</span>
         );

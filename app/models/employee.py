@@ -56,6 +56,11 @@ class Employee(BaseModel):
         nullable=True
     )
 
+    designation_id = Column(
+        ForeignKey("designations.id"),
+        nullable=True
+    )
+
     shift_id = Column(
         ForeignKey("shifts.id"),
         nullable=True
@@ -63,6 +68,10 @@ class Employee(BaseModel):
 
     department = relationship(
         "Department"
+    )
+
+    designation = relationship(
+        "Designation"
     )
 
     shift = relationship(

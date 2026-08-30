@@ -26,6 +26,8 @@ class EmployeeCreateRequest(BaseModel):
 
     department_id: UUID | None = None
 
+    designation_id: UUID | None = None
+
     shift_id: UUID | None = None
 
 
@@ -46,6 +48,8 @@ class EmployeeUpdateRequest(BaseModel):
     joining_date: date | None = None
 
     department_id: UUID | None = None
+
+    designation_id: UUID | None = None
 
     shift_id: UUID | None = None
 
@@ -71,6 +75,8 @@ class EmployeeResponse(BaseModel):
     joining_date: date | None = None
 
     department_id: UUID | None = None
+
+    designation_id: UUID | None = None
 
     shift_id: UUID | None = None
 

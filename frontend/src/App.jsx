@@ -8,6 +8,7 @@ import DashboardPage from './features/dashboard/DashboardPage';
 import EmployeesPage from './features/employees/EmployeesPage';
 import EmployeeProfile from './features/employees/EmployeeProfile';
 import DepartmentsPage from './features/departments/DepartmentsPage';
+import DesignationsPage from './features/designations/DesignationsPage';
 import ShiftsPage from './features/shifts/ShiftsPage';
 import AttendancePage from './features/attendance/AttendancePage';
 import RecognitionPage from './features/recognition/RecognitionPage';
@@ -37,6 +38,8 @@ function AppRouter() {
         return <EmployeeProfile />;
       case 'departments':
         return <DepartmentsPage />;
+      case 'designations':
+        return <DesignationsPage />;
       case 'shifts':
         return <ShiftsPage />;
       case 'attendance':
