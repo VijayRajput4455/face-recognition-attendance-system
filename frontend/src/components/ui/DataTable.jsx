@@ -75,34 +75,52 @@ export function DataTable({
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="border-b border-slate-200/80 bg-slate-50/75 text-slate-600 text-xs font-semibold uppercase tracking-wider">
-              {columns.map((col, idx) => (
-                <th
-                  key={col.accessor || idx}
-                  onClick={() => col.sortable && handleSort(col.accessor)}
-                  className={cn(
-                    'py-3.5 px-4 font-semibold select-none',
-                    col.sortable && 'cursor-pointer hover:bg-slate-100/80 transition-colors',
-                    col.className
-                  )}
-                >
-                  <div className="flex items-center gap-1.5">
-                    <span>{col.header}</span>
-                    {col.sortable && (
-                      <span className="text-slate-400">
-                        {sortField === col.accessor ? (
-                          sortDirection === 'asc' ? (
-                            <ChevronUp className="w-3.5 h-3.5 text-indigo-600" />
-                          ) : (
-                            <ChevronDown className="w-3.5 h-3.5 text-indigo-600" />
-                          )
-                        ) : (
-                          <ChevronsUpDown className="w-3.5 h-3.5 opacity-40 hover:opacity-100" />
-                        )}
-                      </span>
+              {columns.map((col, idx) => {
+                const isRight =
+                  col.className?.includes('text-right') ||
+                  col.cellClassName?.includes('text-right') ||
+                  col.align === 'right' ||
+                  col.headerAlign === 'right';
+                const isCenter =
+                  col.className?.includes('text-center') ||
+                  col.cellClassName?.includes('text-center') ||
+                  col.align === 'center' ||
+                  col.headerAlign === 'center';
+
+                return (
+                  <th
+                    key={col.accessor || idx}
+                    onClick={() => col.sortable && handleSort(col.accessor)}
+                    className={cn(
+                      'py-3.5 px-4 font-semibold select-none',
+                      col.sortable && 'cursor-pointer hover:bg-slate-100/80 transition-colors',
+                      col.className
                     )}
-                  </div>
-                </th>
-              ))}
+                  >
+                    <div
+                      className={cn(
+                        'flex items-center gap-1.5',
+                        isRight ? 'justify-end' : isCenter ? 'justify-center' : 'justify-start'
+                      )}
+                    >
+                      <span>{col.header}</span>
+                      {col.sortable && (
+                        <span className="text-slate-400">
+                          {sortField === col.accessor ? (
+                            sortDirection === 'asc' ? (
+                              <ChevronUp className="w-3.5 h-3.5 text-indigo-600" />
+                            ) : (
+                              <ChevronDown className="w-3.5 h-3.5 text-indigo-600" />
+                            )
+                          ) : (
+                            <ChevronsUpDown className="w-3.5 h-3.5 opacity-40 hover:opacity-100" />
+                          )}
+                        </span>
+                      )}
+                    </div>
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
