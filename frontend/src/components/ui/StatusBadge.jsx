@@ -11,12 +11,34 @@ export function StatusBadge({ status, type = 'status', className, showIcon = tru
   let icon = null;
   let label = normalized;
 
+  // Employment status
+  if (type === 'employment' || ['ACTIVE', 'INACTIVE', 'SUSPENDED'].includes(normalized)) {
+    switch (normalized) {
+      case 'ACTIVE':
+        styles = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+        icon = <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />;
+        label = 'Active';
+        break;
+      case 'INACTIVE':
+        styles = 'bg-slate-100 text-slate-600 border-slate-200';
+        icon = <XCircle className="w-3.5 h-3.5 text-slate-400" />;
+        label = 'Inactive';
+        break;
+      case 'SUSPENDED':
+        styles = 'bg-rose-50 text-rose-700 border-rose-200';
+        icon = <AlertCircle className="w-3.5 h-3.5 text-rose-600" />;
+        label = 'Suspended';
+        break;
+      default:
+        break;
+    }
+  }
+
   // Enrollment status
   if (type === 'enrollment' || ['COMPLETED', 'PROCESSING', 'FAILED', 'PENDING'].includes(normalized)) {
     switch (normalized) {
       case 'COMPLETED':
       case 'ENROLLED':
-      case 'ACTIVE':
         styles = 'bg-emerald-50 text-emerald-700 border-emerald-200';
         icon = <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />;
         label = normalized === 'COMPLETED' ? 'Enrolled' : label;

@@ -72,7 +72,7 @@ class EmployeeOrchestrator:
 
                 shift_id=request.shift_id,
 
-                employment_status="PENDING",
+                employment_status=request.employment_status or "ACTIVE",
             )
 
             employee = self.employee_repository.create(
@@ -203,11 +203,17 @@ class EmployeeOrchestrator:
 
             employee.phone = request.phone
 
+            if request.joining_date is not None:
+                employee.joining_date = request.joining_date
+
             employee.department_id = request.department_id
 
             employee.designation_id = request.designation_id
 
             employee.shift_id = request.shift_id
+
+            if request.employment_status is not None:
+                employee.employment_status = request.employment_status
 
             employee = self.employee_repository.update_employee(
 

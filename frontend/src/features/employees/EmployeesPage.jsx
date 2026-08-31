@@ -18,6 +18,7 @@ import { getInitials, getAvatarColor, formatDate, cn } from '../../lib/utils';
 import {
   UserPlus,
   UserCheck,
+  UserX,
   MoreVertical,
   ScanFace,
   Eye,
@@ -29,6 +30,7 @@ import {
   Clock,
   CalendarCheck2,
   Users,
+  Power,
 } from 'lucide-react';
 
 export function EmployeesPage() {
@@ -92,6 +94,19 @@ export function EmployeesPage() {
     },
   });
 
+  // Quick Toggle Active/Inactive Mutation
+  const toggleStatusMutation = useMutation({
+    mutationFn: ({ id, newStatus }) => employeesApi.update(id, { employment_status: newStatus }),
+    onSuccess: (updated) => {
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
+      success('Status Updated', `${updated.first_name} is now marked as ${updated.employment_status}.`);
+      setActiveMenuId(null);
+    },
+    onError: (err) => {
+      toastError('Update Failed', err.message);
+    },
+  });
+
   // Lookups
   const departmentMap = useMemo(() => {
     const map = new Map();
@@ -127,7 +142,11 @@ export function EmployeesPage() {
   const totalEmployeesCount = employees.length;
 
   const activeEmployeesCount = useMemo(() => {
-    return employees.filter((emp) => emp.is_active !== false).length;
+    return employees.filter((emp) => (emp.employment_status || 'ACTIVE') === 'ACTIVE').length;
+  }, [employees]);
+
+  const inactiveEmployeesCount = useMemo(() => {
+    return employees.filter((emp) => (emp.employment_status || 'ACTIVE') === 'INACTIVE').length;
   }, [employees]);
 
   const enrolledEmployeesCount = useMemo(() => {
@@ -172,16 +191,18 @@ export function EmployeesPage() {
       }
       // Status filter
       if (selectedStatus) {
+        const empStatus = emp.employment_status || 'ACTIVE';
         const enrollment = enrollmentMap.get(emp.id);
-        const status = enrollment ? enrollment.status : 'PENDING';
+        const enrollStatus = enrollment ? enrollment.status : 'PENDING';
+
         if (selectedStatus === 'ACTIVE') {
-          if (emp.is_active === false) return false;
+          if (empStatus !== 'ACTIVE') return false;
+        } else if (selectedStatus === 'INACTIVE') {
+          if (empStatus !== 'INACTIVE') return false;
         } else if (selectedStatus === 'COMPLETED') {
-          if (status !== 'COMPLETED') return false;
+          if (enrollStatus !== 'COMPLETED') return false;
         } else if (selectedStatus === 'PENDING') {
-          if (status !== 'PENDING') return false;
-        } else if (status !== selectedStatus) {
-          return false;
+          if (enrollStatus !== 'PENDING') return false;
         }
       }
       return true;
@@ -223,6 +244,14 @@ export function EmployeesPage() {
     e?.stopPropagation();
     setDeleteTarget(emp);
     setActiveMenuId(null);
+  };
+
+  // Handle Toggle Active/Inactive
+  const handleToggleStatus = (emp, e) => {
+    e?.stopPropagation();
+    const currentStatus = emp.employment_status || 'ACTIVE';
+    const newStatus = currentStatus === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+    toggleStatusMutation.mutate({ id: emp.id, newStatus });
   };
 
   // Table Columns
@@ -307,6 +336,15 @@ export function EmployeesPage() {
       },
     },
     {
+      header: 'Employment',
+      accessor: 'employment_status',
+      sortable: true,
+      render: (emp) => {
+        const status = emp.employment_status || 'ACTIVE';
+        return <StatusBadge status={status} type="employment" />;
+      },
+    },
+    {
       header: 'Biometric Status',
       accessor: 'enrollment',
       render: (emp) => {
@@ -326,54 +364,70 @@ export function EmployeesPage() {
       accessor: 'actions',
       className: 'text-right',
       cellClassName: 'text-right',
-      render: (emp) => (
-        <div className="relative inline-block text-left" onClick={(e) => e.stopPropagation()}>
-          <button
-            onClick={() => setActiveMenuId(activeMenuId === emp.id ? null : emp.id)}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
-            aria-label="Actions"
-          >
-            <MoreVertical className="w-4 h-4" />
-          </button>
+      render: (emp) => {
+        const isEmpActive = (emp.employment_status || 'ACTIVE') === 'ACTIVE';
 
-          {activeMenuId === emp.id && (
-            <>
-              <div className="fixed inset-0 z-30" onClick={() => setActiveMenuId(null)} />
-              <div className="absolute right-0 mt-1 w-44 bg-white rounded-2xl border border-slate-200 shadow-xl py-1.5 z-40 animate-in fade-in zoom-in-95 duration-150">
-                <button
-                  onClick={(e) => handleViewProfile(emp, e)}
-                  className="w-full flex items-center gap-2 px-3.5 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 hover:text-indigo-600 transition-colors"
-                >
-                  <Eye className="w-3.5 h-3.5 text-slate-400" />
-                  View Profile
-                </button>
-                <button
-                  onClick={(e) => handleEnrollFace(emp, e)}
-                  className="w-full flex items-center gap-2 px-3.5 py-2 text-xs font-medium text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
-                >
-                  <ScanFace className="w-3.5 h-3.5 text-indigo-600" />
-                  Enroll Biometrics
-                </button>
-                <button
-                  onClick={(e) => handleEdit(emp, e)}
-                  className="w-full flex items-center gap-2 px-3.5 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors"
-                >
-                  <Edit2 className="w-3.5 h-3.5 text-slate-400" />
-                  Edit Employee
-                </button>
-                <div className="my-1 border-t border-slate-100" />
-                <button
-                  onClick={(e) => handleDelete(emp, e)}
-                  className="w-full flex items-center gap-2 px-3.5 py-2 text-xs font-medium text-rose-600 hover:bg-rose-50 transition-colors"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  Delete Record
-                </button>
-              </div>
-            </>
-          )}
-        </div>
-      ),
+        return (
+          <div className="relative inline-block text-left" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setActiveMenuId(activeMenuId === emp.id ? null : emp.id)}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+              aria-label="Actions"
+            >
+              <MoreVertical className="w-4 h-4" />
+            </button>
+
+            {activeMenuId === emp.id && (
+              <>
+                <div className="fixed inset-0 z-30" onClick={() => setActiveMenuId(null)} />
+                <div className="absolute right-0 mt-1 w-48 bg-white rounded-2xl border border-slate-200 shadow-xl py-1.5 z-40 animate-in fade-in zoom-in-95 duration-150">
+                  <button
+                    onClick={(e) => handleViewProfile(emp, e)}
+                    className="w-full flex items-center gap-2 px-3.5 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 hover:text-indigo-600 transition-colors cursor-pointer"
+                  >
+                    <Eye className="w-3.5 h-3.5 text-slate-400" />
+                    View Profile
+                  </button>
+                  <button
+                    onClick={(e) => handleEnrollFace(emp, e)}
+                    className="w-full flex items-center gap-2 px-3.5 py-2 text-xs font-medium text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors cursor-pointer"
+                  >
+                    <ScanFace className="w-3.5 h-3.5 text-indigo-600" />
+                    Enroll Biometrics
+                  </button>
+                  <button
+                    onClick={(e) => handleEdit(emp, e)}
+                    className="w-full flex items-center gap-2 px-3.5 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors cursor-pointer"
+                  >
+                    <Edit2 className="w-3.5 h-3.5 text-slate-400" />
+                    Edit Details
+                  </button>
+                  <button
+                    onClick={(e) => handleToggleStatus(emp, e)}
+                    className={cn(
+                      'w-full flex items-center gap-2 px-3.5 py-2 text-xs font-medium transition-colors cursor-pointer',
+                      isEmpActive
+                        ? 'text-amber-700 hover:bg-amber-50'
+                        : 'text-emerald-700 hover:bg-emerald-50'
+                    )}
+                  >
+                    <Power className="w-3.5 h-3.5" />
+                    {isEmpActive ? 'Set as Inactive' : 'Set as Active'}
+                  </button>
+                  <div className="my-1 border-t border-slate-100" />
+                  <button
+                    onClick={(e) => handleDelete(emp, e)}
+                    className="w-full flex items-center gap-2 px-3.5 py-2 text-xs font-medium text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Delete Record
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        );
+      },
     },
   ];
 
@@ -450,6 +504,35 @@ export function EmployeesPage() {
           </div>
         </button>
 
+        {/* Inactive Staff Toggle */}
+        <button
+          type="button"
+          onClick={() => setSelectedStatus(selectedStatus === 'INACTIVE' ? '' : 'INACTIVE')}
+          className={cn(
+            'flex items-center justify-between p-4 sm:p-5 rounded-2xl border text-left transition-all duration-200 cursor-pointer shadow-xs hover:shadow-md group min-h-[82px]',
+            selectedStatus === 'INACTIVE'
+              ? 'bg-gradient-to-br from-blue-50/90 via-indigo-50/70 to-blue-50/50 border-blue-500/60 ring-2 ring-blue-500/20'
+              : 'bg-white border-slate-200/80 hover:border-blue-300 hover:bg-blue-50/30'
+          )}
+        >
+          <div className="min-w-0 pr-3">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block truncate">
+              Inactive Staff
+            </span>
+            <div className="flex items-baseline gap-2 mt-1">
+              <span className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 leading-none">
+                {inactiveEmployeesCount}
+              </span>
+              <span className="text-xs text-blue-600 font-medium truncate">
+                {inactiveEmployeesCount} Deactivated
+              </span>
+            </div>
+          </div>
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-blue-100/70 border border-blue-200/60 text-blue-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
+            <UserX className="w-5 h-5" />
+          </div>
+        </button>
+
         {/* Face Data Enrolled Toggle */}
         <button
           type="button"
@@ -476,30 +559,6 @@ export function EmployeesPage() {
           </div>
           <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-blue-100/70 border border-blue-200/60 text-blue-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
             <ScanFace className="w-5 h-5" />
-          </div>
-        </button>
-
-        {/* Department Coverage */}
-        <button
-          type="button"
-          onClick={() => navigate('departments')}
-          className="flex items-center justify-between p-4 sm:p-5 rounded-2xl border border-slate-200/80 bg-white hover:border-blue-300 hover:bg-blue-50/30 text-left transition-all duration-200 cursor-pointer shadow-xs hover:shadow-md group min-h-[82px]"
-        >
-          <div className="min-w-0 pr-3">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block truncate">
-              Departments
-            </span>
-            <div className="flex items-baseline gap-2 mt-1">
-              <span className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 leading-none">
-                {departmentCount}
-              </span>
-              <span className="text-xs text-blue-600 font-medium truncate">
-                {assignedDeptEmployeesCount} Staff Assigned
-              </span>
-            </div>
-          </div>
-          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-blue-100/70 border border-blue-200/60 text-blue-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
-            <Building2 className="w-5 h-5" />
           </div>
         </button>
       </div>
@@ -565,8 +624,9 @@ export function EmployeesPage() {
                 className="px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
               >
                 <option value="">All Status</option>
-                <option value="ACTIVE">Active</option>
-                <option value="COMPLETED">Biometric Enrolled</option>
+                <option value="ACTIVE">Active Staff ({activeEmployeesCount})</option>
+                <option value="INACTIVE">Inactive Staff ({inactiveEmployeesCount})</option>
+                <option value="COMPLETED">Biometric Enrolled ({enrolledEmployeesCount})</option>
                 <option value="PENDING">Pending Enrollment</option>
               </select>
 
@@ -603,22 +663,12 @@ export function EmployeesPage() {
         </div>
       </div>
 
-      {/* Main Data Table */}
+      {/* Employees DataTable */}
       <DataTable
         columns={columns}
         data={filteredEmployees}
-        loading={loadingEmployees}
-        emptyTitle="No employees found"
-        emptyDescription={
-          searchQuery || selectedDepartment || selectedDesignation || selectedShift || selectedStatus
-            ? 'No employees match your active search filters.'
-            : 'Get started by creating your first employee record.'
-        }
-        emptyActionLabel="Add Employee"
-        onEmptyAction={() => {
-          setSelectedEmployee(null);
-          setDrawerOpen(true);
-        }}
+        isLoading={loadingEmployees}
+        emptyMessage="No employees found matching current filters."
         onRowClick={(emp) => handleViewProfile(emp)}
       />
 
@@ -641,8 +691,8 @@ export function EmployeesPage() {
         isLoading={deleteMutation.isPending}
         danger
         title="Delete Employee Record?"
-        description={`Are you sure you want to delete ${deleteTarget?.first_name} ${deleteTarget?.last_name || ''} (${deleteTarget?.employee_code})? This will remove all associated attendance logs and face embeddings.`}
-        confirmText="Delete Employee"
+        description={`Are you sure you want to permanently remove ${deleteTarget?.first_name} ${deleteTarget?.last_name || ''} (${deleteTarget?.employee_code})? This will delete all biometric embeddings and attendance history.`}
+        confirmText="Delete Record"
       />
     </div>
   );

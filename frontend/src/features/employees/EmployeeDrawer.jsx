@@ -25,6 +25,7 @@ export function EmployeeDrawer({ isOpen, onClose, employee, onEnrollFace }) {
     department_id: '',
     designation_id: '',
     shift_id: '',
+    employment_status: 'ACTIVE',
   });
 
   const [errors, setErrors] = useState({});
@@ -42,6 +43,7 @@ export function EmployeeDrawer({ isOpen, onClose, employee, onEnrollFace }) {
         department_id: employee.department_id || '',
         designation_id: employee.designation_id || '',
         shift_id: employee.shift_id || '',
+        employment_status: employee.employment_status || 'ACTIVE',
       });
     } else {
       setFormData({
@@ -54,6 +56,7 @@ export function EmployeeDrawer({ isOpen, onClose, employee, onEnrollFace }) {
         department_id: '',
         designation_id: '',
         shift_id: '',
+        employment_status: 'ACTIVE',
       });
     }
     setErrors({});
@@ -134,6 +137,7 @@ export function EmployeeDrawer({ isOpen, onClose, employee, onEnrollFace }) {
       department_id: formData.department_id || null,
       designation_id: formData.designation_id || null,
       shift_id: formData.shift_id || null,
+      employment_status: formData.employment_status || 'ACTIVE',
     };
 
     if (isEditing) {
@@ -152,7 +156,7 @@ export function EmployeeDrawer({ isOpen, onClose, employee, onEnrollFace }) {
       title={isEditing ? 'Edit Employee Record' : 'Register New Employee'}
       subtitle={
         isEditing
-          ? 'Update contact, department, and work assignment info'
+          ? 'Update contact, department, status, and work assignment info'
           : 'Add a new member to the workforce and initialize their profile'
       }
       size="md"
@@ -269,11 +273,11 @@ export function EmployeeDrawer({ isOpen, onClose, employee, onEnrollFace }) {
           </div>
         </div>
 
-        {/* Section 2: Department & Shift Assignment */}
+        {/* Section 2: Department, Shift & Status */}
         <div className="space-y-4">
           <div className="flex items-center gap-2 text-xs font-bold text-slate-800 pb-1 border-b border-slate-100 uppercase tracking-wider">
             <Briefcase className="w-4 h-4 text-indigo-600" />
-            Workforce Placement
+            Workforce Placement & Status
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -323,6 +327,56 @@ export function EmployeeDrawer({ isOpen, onClose, employee, onEnrollFace }) {
                   </option>
                 ))}
               </select>
+            </div>
+          </div>
+
+          {/* Status Selection */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">Employment Status</label>
+            <div className="grid grid-cols-2 gap-3">
+              <label
+                className={`flex items-center gap-2.5 p-2.5 rounded-xl border cursor-pointer transition-all ${
+                  formData.employment_status === 'ACTIVE'
+                    ? 'border-emerald-500 bg-emerald-50/50 text-emerald-950 ring-1 ring-emerald-500/30'
+                    : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="employment_status"
+                  value="ACTIVE"
+                  checked={formData.employment_status === 'ACTIVE'}
+                  onChange={(e) => setFormData({ ...formData, employment_status: e.target.value })}
+                  className="sr-only"
+                />
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" />
+                <div>
+                  <span className="text-xs font-semibold block">Active</span>
+                  <span className="text-[10px] text-slate-500 block">Eligible for live attendance</span>
+                </div>
+              </label>
+
+              <label
+                className={`flex items-center gap-2.5 p-2.5 rounded-xl border cursor-pointer transition-all ${
+                  formData.employment_status === 'INACTIVE'
+                    ? 'border-slate-500 bg-slate-100 text-slate-900 ring-1 ring-slate-400/30'
+                    : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="employment_status"
+                  value="INACTIVE"
+                  checked={formData.employment_status === 'INACTIVE'}
+                  onChange={(e) => setFormData({ ...formData, employment_status: e.target.value })}
+                  className="sr-only"
+                />
+                <span className="w-2.5 h-2.5 rounded-full bg-slate-400 shrink-0" />
+                <div>
+                  <span className="text-xs font-semibold block">Inactive</span>
+                  <span className="text-[10px] text-slate-500 block">Deactivated workforce member</span>
+                </div>
+              </label>
             </div>
           </div>
         </div>

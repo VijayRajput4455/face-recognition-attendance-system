@@ -30,6 +30,8 @@ class EmployeeCreateRequest(BaseModel):
 
     shift_id: UUID | None = None
 
+    employment_status: str | None = "ACTIVE"
+
 
 # ==========================================================
 # Update Employee
@@ -52,6 +54,8 @@ class EmployeeUpdateRequest(BaseModel):
     designation_id: UUID | None = None
 
     shift_id: UUID | None = None
+
+    employment_status: str | None = None
 
 
 # ==========================================================
