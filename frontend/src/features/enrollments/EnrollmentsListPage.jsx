@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { enrollmentsApi } from '../../api/enrollments';
 import { employeesApi } from '../../api/employees';
 import { departmentsApi } from '../../api/departments';
+import { designationsApi } from '../../api/designations';
 import { shiftsApi } from '../../api/shifts';
 import { useNavigation } from '../../context/NavigationContext';
 import { useToast } from '../../context/ToastContext';
@@ -26,6 +27,7 @@ import {
   Clock,
   Building2,
   Layers,
+  Eye,
 } from 'lucide-react';
 
 export function EnrollmentsListPage() {
@@ -38,6 +40,7 @@ export function EnrollmentsListPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState('');
+  const [selectedDesignation, setSelectedDesignation] = useState('');
   const [selectedShift, setSelectedShift] = useState('');
   const [sortBy, setSortBy] = useState('newest');
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -65,7 +68,13 @@ export function EnrollmentsListPage() {
     queryFn: departmentsApi.getAll,
   });
 
-  // 4. Fetch Shifts
+  // 4. Fetch Designations
+  const { data: designations = [] } = useQuery({
+    queryKey: ['designations'],
+    queryFn: designationsApi.getAll,
+  });
+
+  // 5. Fetch Shifts
   const { data: shifts = [] } = useQuery({
     queryKey: ['shifts'],
     queryFn: shiftsApi.getAll,
@@ -76,6 +85,24 @@ export function EnrollmentsListPage() {
     employees.forEach((e) => map.set(e.id, e));
     return map;
   }, [employees]);
+
+  const departmentMap = useMemo(() => {
+    const map = new Map();
+    departments.forEach((d) => map.set(d.id, d.department_name));
+    return map;
+  }, [departments]);
+
+  const designationMap = useMemo(() => {
+    const map = new Map();
+    designations.forEach((d) => map.set(d.id, d.designation_name));
+    return map;
+  }, [designations]);
+
+  const shiftMap = useMemo(() => {
+    const map = new Map();
+    shifts.forEach((s) => map.set(s.id, s.shift_name));
+    return map;
+  }, [shifts]);
 
   // Metric Counts for 4 Toggles
   const totalEnrollmentsCount = enrollments.length;
@@ -155,6 +182,11 @@ export function EnrollmentsListPage() {
           if (!emp || emp.department_id !== selectedDepartment) return false;
         }
 
+        // Designation Filter
+        if (selectedDesignation) {
+          if (!emp || emp.designation_id !== selectedDesignation) return false;
+        }
+
         // Shift Filter
         if (selectedShift) {
           if (!emp || emp.shift_id !== selectedShift) return false;
@@ -185,6 +217,7 @@ export function EnrollmentsListPage() {
     searchQuery,
     selectedStatus,
     selectedDepartment,
+    selectedDesignation,
     selectedShift,
     sortBy,
     employeeMap,
@@ -193,6 +226,16 @@ export function EnrollmentsListPage() {
   if (isWizardMode) {
     return <EnrollmentWizard />;
   }
+
+  // Handle navigate to employee profile
+  const handleViewEmployeeProfile = (emp, e) => {
+    e?.stopPropagation();
+    if (!emp) return;
+    navigate('employee-profile', {
+      employeeId: emp.id,
+      employeeName: `${emp.first_name} ${emp.last_name || ''}`.trim(),
+    });
+  };
 
   const columns = [
     {
@@ -204,21 +247,110 @@ export function EnrollmentsListPage() {
         const name = emp ? `${emp.first_name} ${emp.last_name || ''}`.trim() : 'Unknown Employee';
         const initials = getInitials(emp?.first_name || 'E', emp?.last_name || 'E');
         const avatarColor = getAvatarColor(name);
+        const desigName = emp ? designationMap.get(emp.designation_id) : null;
 
         return (
-          <div className="flex items-center gap-3">
+          <div
+            onClick={(e) => handleViewEmployeeProfile(emp, e)}
+            className="flex items-center gap-3 cursor-pointer group select-none"
+            title="Click to view full employee profile"
+          >
             <div
-              className={`w-9 h-9 rounded-full border flex items-center justify-center font-bold text-xs shrink-0 ${avatarColor}`}
+              className={`w-9 h-9 rounded-full border flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs transition-transform group-hover:scale-105 ${avatarColor}`}
             >
               {initials}
             </div>
             <div>
-              <div className="font-semibold text-slate-900">{name}</div>
-              <div className="text-[11px] text-slate-400 font-mono">
-                {emp?.employee_code || item.employee_id.substring(0, 8)}
+              <div className="font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors">
+                {name}
+              </div>
+              <div className="text-[11px] text-slate-400 font-normal">
+                {desigName ? `${desigName} • ` : ''}
+                {emp?.email || (emp?.employee_code ? `Code: ${emp.employee_code}` : 'No email registered')}
               </div>
             </div>
           </div>
+        );
+      },
+    },
+    {
+      header: 'Code',
+      accessor: 'employee_code',
+      render: (item) => {
+        const emp = employeeMap.get(item.employee_id);
+        return (
+          <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
+            {emp?.employee_code || item.employee_id.substring(0, 8)}
+          </span>
+        );
+      },
+    },
+    {
+      header: 'Department',
+      accessor: 'department',
+      render: (item) => {
+        const emp = employeeMap.get(item.employee_id);
+        const deptName = emp ? departmentMap.get(emp.department_id) : null;
+        return deptName ? (
+          <span className="text-slate-800 font-medium">{deptName}</span>
+        ) : (
+          <span className="text-slate-400 italic">Unassigned</span>
+        );
+      },
+    },
+    {
+      header: 'Designation',
+      accessor: 'designation',
+      render: (item) => {
+        const emp = employeeMap.get(item.employee_id);
+        const desigName = emp ? designationMap.get(emp.designation_id) : null;
+        return desigName ? (
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200/60">
+            {desigName}
+          </span>
+        ) : (
+          <span className="text-slate-400 italic">Unassigned</span>
+        );
+      },
+    },
+    {
+      header: 'Shift',
+      accessor: 'shift',
+      render: (item) => {
+        const emp = employeeMap.get(item.employee_id);
+        const shiftName = emp ? shiftMap.get(emp.shift_id) : null;
+        return shiftName ? (
+          <span className="text-slate-700">{shiftName}</span>
+        ) : (
+          <span className="text-slate-400 italic">Default</span>
+        );
+      },
+    },
+    {
+      header: 'Employment',
+      accessor: 'employment_status',
+      render: (item) => {
+        const emp = employeeMap.get(item.employee_id);
+        const status = emp?.employment_status || 'ACTIVE';
+        const isActive = status === 'ACTIVE';
+
+        return (
+          <span
+            className={cn(
+              'inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[11px] font-semibold rounded-full border shadow-2xs',
+              isActive
+                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                : 'bg-slate-100 text-slate-600 border-slate-200'
+            )}
+          >
+            <span
+              className={cn(
+                'w-1.5 h-1.5 rounded-full',
+                isActive ? 'bg-emerald-500' : 'bg-slate-400'
+              )}
+            />
+            <span>{isActive ? 'Active' : 'Inactive'}</span>
+          </span>
         );
       },
     },
@@ -229,51 +361,54 @@ export function EnrollmentsListPage() {
       render: (item) => <StatusBadge status={item.status} type="enrollment" />,
     },
     {
-      header: 'Enrollment ID',
-      accessor: 'id',
-      render: (item) => <span className="font-mono text-xs text-slate-600">{item.id.substring(0, 13)}...</span>,
-    },
-    {
-      header: 'Video Path',
-      accessor: 'video_path',
-      render: (item) => <span className="text-xs text-slate-500 truncate max-w-xs block">{item.video_path}</span>,
-    },
-    {
-      header: 'Error Notes',
-      accessor: 'error_message',
-      render: (item) => (
-        <span className="text-xs text-rose-600 truncate max-w-xs block">{item.error_message || '—'}</span>
-      ),
-    },
-    {
       header: 'Actions',
       accessor: 'actions',
       className: 'text-right',
       cellClassName: 'text-right',
-      render: (item) => (
-        <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
-          {item.status === 'FAILED' && (
-            <button
-              onClick={() => retryMutation.mutate(item.id)}
-              disabled={retryMutation.isPending}
-              className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-colors cursor-pointer"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              Retry
-            </button>
-          )}
+      render: (item) => {
+        const emp = employeeMap.get(item.employee_id);
 
-          <button
-            type="button"
-            onClick={() => setDeleteTarget(item)}
-            className="w-8 h-8 rounded-xl border border-slate-200/80 bg-white text-slate-500 hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50/60 shadow-2xs transition-all duration-150 flex items-center justify-center cursor-pointer active:scale-95 group"
-            title="Delete Biometric Vectors & Record"
-            aria-label="Delete Biometric Vectors & Record"
-          >
-            <Trash2 className="w-3.5 h-3.5 transition-transform group-hover:scale-110" />
-          </button>
-        </div>
-      ),
+        return (
+          <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+            {item.status === 'FAILED' && (
+              <button
+                type="button"
+                onClick={() => retryMutation.mutate(item.id)}
+                disabled={retryMutation.isPending}
+                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-colors cursor-pointer"
+                title="Retry Enrollment Pipeline"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                Retry
+              </button>
+            )}
+
+            {/* View Profile Button */}
+            {emp && (
+              <button
+                type="button"
+                onClick={(e) => handleViewEmployeeProfile(emp, e)}
+                className="w-8 h-8 rounded-xl border border-slate-200/80 bg-white text-slate-500 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50/60 shadow-2xs transition-all duration-150 flex items-center justify-center cursor-pointer active:scale-95 group"
+                title="View Employee Profile"
+                aria-label="View Employee Profile"
+              >
+                <Eye className="w-3.5 h-3.5 transition-transform group-hover:scale-110" />
+              </button>
+            )}
+
+            {/* Delete Biometrics Button */}
+            <button
+              type="button"
+              onClick={() => setDeleteTarget(item)}
+              className="w-8 h-8 rounded-xl border border-slate-200/80 bg-white text-slate-500 hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50/60 shadow-2xs transition-all duration-150 flex items-center justify-center cursor-pointer active:scale-95 group"
+              title="Delete Biometric Vectors & Record"
+              aria-label="Delete Biometric Vectors & Record"
+            >
+              <Trash2 className="w-3.5 h-3.5 transition-transform group-hover:scale-110" />
+            </button>
+          </div>
+        );
+      },
     },
   ];
 
@@ -456,6 +591,20 @@ export function EnrollmentsListPage() {
                 ))}
               </select>
 
+              {/* Designation Filter */}
+              <select
+                value={selectedDesignation}
+                onChange={(e) => setSelectedDesignation(e.target.value)}
+                className="px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              >
+                <option value="">All Designations</option>
+                {designations.map((desig) => (
+                  <option key={desig.id} value={desig.id}>
+                    {desig.designation_name}
+                  </option>
+                ))}
+              </select>
+
               {/* Shift Filter */}
               <select
                 value={selectedShift}
@@ -488,6 +637,7 @@ export function EnrollmentsListPage() {
                     setSearchQuery('');
                     setSelectedStatus('');
                     setSelectedDepartment('');
+                    setSelectedDesignation('');
                     setSelectedShift('');
                     setSortBy('newest');
                   }}
@@ -517,6 +667,12 @@ export function EnrollmentsListPage() {
         columns={columns}
         data={filteredEnrollments}
         loading={loadingEnrollments}
+        onRowClick={(row) => {
+          const emp = employeeMap.get(row.employee_id);
+          if (emp) {
+            handleViewEmployeeProfile(emp);
+          }
+        }}
         emptyTitle="No enrollment jobs found"
         emptyDescription="No biometric video processing jobs match the selected filter criteria."
         emptyActionLabel="Enroll Face Biometrics"
