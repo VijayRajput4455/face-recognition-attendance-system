@@ -26,6 +26,11 @@ export function EnrollmentsListPage() {
   const { data: enrollments = [], isLoading: loadingEnrollments } = useQuery({
     queryKey: ['enrollments'],
     queryFn: enrollmentsApi.getAll,
+    refetchInterval: (query) => {
+      const data = query?.state?.data;
+      const hasActiveJobs = Array.isArray(data) && data.some((e) => ['PENDING', 'PROCESSING'].includes(e.status));
+      return hasActiveJobs ? 2000 : false;
+    },
   });
 
   // 2. Fetch Employees for mapping

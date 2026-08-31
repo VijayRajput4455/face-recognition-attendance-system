@@ -137,6 +137,7 @@ class EnrollmentOrchestrator:
             )
 
             return {
+                "id": str(enrollment.id),
                 "employee_id": str(employee.id),
                 "enrollment_id": str(enrollment.id),
                 "status": "PENDING",

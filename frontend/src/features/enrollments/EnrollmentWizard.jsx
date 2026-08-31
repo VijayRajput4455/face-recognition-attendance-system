@@ -179,8 +179,9 @@ export function EnrollmentWizard() {
       return enrollmentsApi.startEnrollment(selectedEmployee.id, videoFile);
     },
     onSuccess: (res) => {
-      setEnrollmentId(res.id);
-      setEnrollmentStatus(res.status || 'PROCESSING');
+      const id = res?.enrollment_id || res?.id;
+      setEnrollmentId(id);
+      setEnrollmentStatus(res?.status || 'PROCESSING');
       setCurrentStep('processing');
     },
     onError: (err) => {
@@ -192,6 +193,8 @@ export function EnrollmentWizard() {
   const retryMutation = useMutation({
     mutationFn: () => enrollmentsApi.retry(enrollmentId),
     onSuccess: (res) => {
+      const id = res?.enrollment_id || res?.id || enrollmentId;
+      setEnrollmentId(id);
       setEnrollmentStatus('PROCESSING');
       setErrorMessage(null);
       setCurrentStep('processing');
@@ -201,49 +204,59 @@ export function EnrollmentWizard() {
     },
   });
 
-  // Polling for Enrollment Status (every 1.5s until COMPLETED or FAILED, max 40 attempts)
+  // Polling for Enrollment Status (every 1.2s until COMPLETED or FAILED, max 60 attempts)
   useEffect(() => {
     let pollInterval;
     let attempts = 0;
 
     if (currentStep === 'processing' && enrollmentId) {
-      pollInterval = setInterval(async () => {
+      const checkStatus = async () => {
         attempts += 1;
         try {
           const res = await enrollmentsApi.getById(enrollmentId);
-          setEnrollmentStatus(res.status);
+          if (res) {
+            setEnrollmentStatus(res.status);
 
-          if (res.status === 'COMPLETED') {
-            clearInterval(pollInterval);
-            queryClient.invalidateQueries({ queryKey: ['employees'] });
-            queryClient.invalidateQueries({ queryKey: ['enrollments'] });
-            queryClient.invalidateQueries({ queryKey: ['milvus-count'] });
-            success('Enrollment Complete', `${selectedEmployee?.first_name}'s face biometric has been registered.`);
-            setCurrentStep('result');
-          } else if (res.status === 'FAILED') {
-            clearInterval(pollInterval);
-            setErrorMessage(res.error_message || 'Facial vector generation failed. Please try with clearer lighting.');
-            setCurrentStep('result');
+            if (res.status === 'COMPLETED') {
+              if (pollInterval) clearInterval(pollInterval);
+              queryClient.invalidateQueries({ queryKey: ['employees'] });
+              queryClient.invalidateQueries({ queryKey: ['enrollments'] });
+              queryClient.invalidateQueries({ queryKey: ['milvus-count'] });
+              queryClient.invalidateQueries({ queryKey: ['employee', selectedEmployee?.id] });
+              queryClient.invalidateQueries({ queryKey: ['enrollments-employee', selectedEmployee?.id] });
+              success('Enrollment Complete', `${selectedEmployee?.first_name || 'Employee'}'s face biometric has been registered.`);
+              setCurrentStep('result');
+            } else if (res.status === 'FAILED') {
+              if (pollInterval) clearInterval(pollInterval);
+              setErrorMessage(res.error_message || 'Facial vector generation failed. Please try with clearer lighting.');
+              setCurrentStep('result');
+            }
           }
 
-          if (attempts > 45) {
-            clearInterval(pollInterval);
+          if (attempts > 60) {
+            if (pollInterval) clearInterval(pollInterval);
             setEnrollmentStatus('FAILED');
             setErrorMessage('Processing timed out. The worker may be busy.');
             setCurrentStep('result');
           }
         } catch (err) {
-          if (attempts > 10) {
-            clearInterval(pollInterval);
+          if (attempts > 15) {
+            if (pollInterval) clearInterval(pollInterval);
             setEnrollmentStatus('FAILED');
             setErrorMessage('Unable to check enrollment status.');
             setCurrentStep('result');
           }
         }
-      }, 1500);
+      };
+
+      // Check immediately
+      checkStatus();
+      pollInterval = setInterval(checkStatus, 1200);
     }
 
-    return () => clearInterval(pollInterval);
+    return () => {
+      if (pollInterval) clearInterval(pollInterval);
+    };
   }, [currentStep, enrollmentId, selectedEmployee, queryClient, success]);
 
   // Filter employees for step 1
