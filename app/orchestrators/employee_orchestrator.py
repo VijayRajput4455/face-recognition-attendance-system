@@ -195,46 +195,44 @@ class EmployeeOrchestrator:
 
                 )
 
-            employee.first_name = request.first_name
+            if request.first_name is not None:
+                employee.first_name = request.first_name
 
-            employee.last_name = request.last_name
+            if request.last_name is not None:
+                employee.last_name = request.last_name
 
-            employee.email = request.email
+            if request.email is not None:
+                employee.email = request.email
 
-            employee.phone = request.phone
+            if request.phone is not None:
+                employee.phone = request.phone
 
             if request.joining_date is not None:
                 employee.joining_date = request.joining_date
 
-            employee.department_id = request.department_id
+            if request.department_id is not None:
+                employee.department_id = request.department_id
 
-            employee.designation_id = request.designation_id
+            if request.designation_id is not None:
+                employee.designation_id = request.designation_id
 
-            employee.shift_id = request.shift_id
+            if request.shift_id is not None:
+                employee.shift_id = request.shift_id
 
             if request.employment_status is not None:
                 employee.employment_status = request.employment_status
 
-            employee = self.employee_repository.update_employee(
-
+            employee = self.employee_repository.update(
                 db=db,
-
                 employee=employee,
-
             )
 
             logger.info(
-
                 "Employee updated successfully.",
-
                 extra={
-
                     "employee_id": str(employee.id),
-
                     "employee_code": employee.employee_code,
-
                 },
-
             )
 
             return EmployeeResponse.model_validate(
@@ -244,6 +242,9 @@ class EmployeeOrchestrator:
         finally:
 
             db.close()
+
+    update = update_employee
+    create = create_employee
 
     # ==========================================================
     # Delete Employee
@@ -276,7 +277,7 @@ class EmployeeOrchestrator:
 
                 )
 
-            self.employee_repository.delete_employee(
+            self.employee_repository.delete(
 
                 db=db,
 
@@ -302,7 +303,9 @@ class EmployeeOrchestrator:
 
             db.close()
 
-        # ==========================================================
+    delete = delete_employee
+
+    # ==========================================================
     # Get Employee By Employee Code
     # ==========================================================
 

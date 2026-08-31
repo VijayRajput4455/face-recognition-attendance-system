@@ -146,6 +146,8 @@ class EmployeeRepository:
 
         return employee
 
+    update_employee = update
+
     # ==========================================================
     # Delete
     # ==========================================================
@@ -159,6 +161,8 @@ class EmployeeRepository:
         db.delete(employee)
 
         db.commit()
+
+    delete_employee = delete
 
     # ==========================================================
     # Update Employment Status
