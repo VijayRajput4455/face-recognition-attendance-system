@@ -11,11 +11,13 @@ import DataTable from '../../components/ui/DataTable';
 import StatusBadge from '../../components/ui/StatusBadge';
 import SearchInput from '../../components/ui/SearchInput';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import StatCard from '../../components/ui/StatCard';
 import EmployeeDrawer from './EmployeeDrawer';
 import PageBanner from '../../components/ui/PageBanner';
-import { getInitials, getAvatarColor, formatDate } from '../../lib/utils';
+import { getInitials, getAvatarColor, formatDate, cn } from '../../lib/utils';
 import {
   UserPlus,
+  UserCheck,
   MoreVertical,
   ScanFace,
   Eye,
@@ -121,6 +123,28 @@ export function EmployeesPage() {
     return map;
   }, [enrollments]);
 
+  // Real-time KPI Metric Calculations
+  const totalEmployeesCount = employees.length;
+
+  const activeEmployeesCount = useMemo(() => {
+    return employees.filter((emp) => emp.is_active !== false).length;
+  }, [employees]);
+
+  const enrolledEmployeesCount = useMemo(() => {
+    return employees.filter((emp) => {
+      const enrollment = enrollmentMap.get(emp.id);
+      return enrollment && enrollment.status === 'COMPLETED';
+    }).length;
+  }, [employees, enrollmentMap]);
+
+  const enrolledPercentage =
+    totalEmployeesCount > 0 ? Math.round((enrolledEmployeesCount / totalEmployeesCount) * 100) : 0;
+
+  const departmentCount = departments.length;
+  const assignedDeptEmployeesCount = useMemo(() => {
+    return employees.filter((emp) => Boolean(emp.department_id)).length;
+  }, [employees]);
+
   // Filtered List
   const filteredEmployees = useMemo(() => {
     return employees.filter((emp) => {
@@ -150,7 +174,15 @@ export function EmployeesPage() {
       if (selectedStatus) {
         const enrollment = enrollmentMap.get(emp.id);
         const status = enrollment ? enrollment.status : 'PENDING';
-        if (status !== selectedStatus) return false;
+        if (selectedStatus === 'ACTIVE') {
+          if (emp.is_active === false) return false;
+        } else if (selectedStatus === 'COMPLETED') {
+          if (status !== 'COMPLETED') return false;
+        } else if (selectedStatus === 'PENDING') {
+          if (status !== 'PENDING') return false;
+        } else if (status !== selectedStatus) {
+          return false;
+        }
       }
       return true;
     });
@@ -355,6 +387,123 @@ export function EmployeesPage() {
         description="Manage registered employees, organizational structure assignments, and biometric profiles."
       />
 
+      {/* Real-Time Blue Theme Metric Toggles */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Total Workforce Toggle */}
+        <button
+          type="button"
+          onClick={() => {
+            setSelectedStatus('');
+            setSelectedDepartment('');
+            setSelectedDesignation('');
+            setSelectedShift('');
+          }}
+          className={cn(
+            'flex items-center justify-between p-4 sm:p-5 rounded-2xl border text-left transition-all duration-200 cursor-pointer shadow-xs hover:shadow-md group min-h-[82px]',
+            !selectedStatus && !selectedDepartment && !selectedDesignation && !selectedShift
+              ? 'bg-gradient-to-br from-blue-50/90 via-indigo-50/70 to-blue-50/50 border-blue-500/60 ring-2 ring-blue-500/20'
+              : 'bg-white border-slate-200/80 hover:border-blue-300 hover:bg-blue-50/30'
+          )}
+        >
+          <div className="min-w-0 pr-3">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block truncate">
+              Total Workforce
+            </span>
+            <div className="flex items-baseline gap-2 mt-1">
+              <span className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 leading-none">
+                {totalEmployeesCount}
+              </span>
+              <span className="text-xs text-blue-600 font-medium truncate">All Registered</span>
+            </div>
+          </div>
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-blue-100/70 border border-blue-200/60 text-blue-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
+            <Users className="w-5 h-5" />
+          </div>
+        </button>
+
+        {/* Active Staff Toggle */}
+        <button
+          type="button"
+          onClick={() => setSelectedStatus(selectedStatus === 'ACTIVE' ? '' : 'ACTIVE')}
+          className={cn(
+            'flex items-center justify-between p-4 sm:p-5 rounded-2xl border text-left transition-all duration-200 cursor-pointer shadow-xs hover:shadow-md group min-h-[82px]',
+            selectedStatus === 'ACTIVE'
+              ? 'bg-gradient-to-br from-blue-50/90 via-indigo-50/70 to-blue-50/50 border-blue-500/60 ring-2 ring-blue-500/20'
+              : 'bg-white border-slate-200/80 hover:border-blue-300 hover:bg-blue-50/30'
+          )}
+        >
+          <div className="min-w-0 pr-3">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block truncate">
+              Active Staff
+            </span>
+            <div className="flex items-baseline gap-2 mt-1">
+              <span className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 leading-none">
+                {activeEmployeesCount}
+              </span>
+              <span className="text-xs text-blue-600 font-medium truncate">
+                {totalEmployeesCount > 0 ? Math.round((activeEmployeesCount / totalEmployeesCount) * 100) : 0}% Active
+              </span>
+            </div>
+          </div>
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-blue-100/70 border border-blue-200/60 text-blue-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
+            <UserCheck className="w-5 h-5" />
+          </div>
+        </button>
+
+        {/* Face Data Enrolled Toggle */}
+        <button
+          type="button"
+          onClick={() => setSelectedStatus(selectedStatus === 'COMPLETED' ? '' : 'COMPLETED')}
+          className={cn(
+            'flex items-center justify-between p-4 sm:p-5 rounded-2xl border text-left transition-all duration-200 cursor-pointer shadow-xs hover:shadow-md group min-h-[82px]',
+            selectedStatus === 'COMPLETED'
+              ? 'bg-gradient-to-br from-blue-50/90 via-indigo-50/70 to-blue-50/50 border-blue-500/60 ring-2 ring-blue-500/20'
+              : 'bg-white border-slate-200/80 hover:border-blue-300 hover:bg-blue-50/30'
+          )}
+        >
+          <div className="min-w-0 pr-3">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block truncate">
+              Face Enrolled
+            </span>
+            <div className="flex items-baseline gap-2 mt-1">
+              <span className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 leading-none">
+                {enrolledEmployeesCount}
+              </span>
+              <span className="text-xs text-blue-600 font-medium truncate">
+                {enrolledPercentage}% Verified
+              </span>
+            </div>
+          </div>
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-blue-100/70 border border-blue-200/60 text-blue-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
+            <ScanFace className="w-5 h-5" />
+          </div>
+        </button>
+
+        {/* Department Coverage */}
+        <button
+          type="button"
+          onClick={() => navigate('departments')}
+          className="flex items-center justify-between p-4 sm:p-5 rounded-2xl border border-slate-200/80 bg-white hover:border-blue-300 hover:bg-blue-50/30 text-left transition-all duration-200 cursor-pointer shadow-xs hover:shadow-md group min-h-[82px]"
+        >
+          <div className="min-w-0 pr-3">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block truncate">
+              Departments
+            </span>
+            <div className="flex items-baseline gap-2 mt-1">
+              <span className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 leading-none">
+                {departmentCount}
+              </span>
+              <span className="text-xs text-blue-600 font-medium truncate">
+                {assignedDeptEmployeesCount} Staff Assigned
+              </span>
+            </div>
+          </div>
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-blue-100/70 border border-blue-200/60 text-blue-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
+            <Building2 className="w-5 h-5" />
+          </div>
+        </button>
+      </div>
+
       {/* Filter & Search Bar with Add Employee Action */}
       <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
         <div className="flex flex-col xl:flex-row xl:items-center gap-3 justify-between">
@@ -417,7 +566,8 @@ export function EmployeesPage() {
               >
                 <option value="">All Status</option>
                 <option value="ACTIVE">Active</option>
-                <option value="PENDING">Pending</option>
+                <option value="COMPLETED">Biometric Enrolled</option>
+                <option value="PENDING">Pending Enrollment</option>
               </select>
 
               {(searchQuery || selectedDepartment || selectedDesignation || selectedShift || selectedStatus) && (
