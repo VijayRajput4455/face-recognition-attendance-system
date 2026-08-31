@@ -1,12 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { shiftsApi } from '../../api/shifts';
 import { employeesApi } from '../../api/employees';
 import { useToast } from '../../context/ToastContext';
+import SearchInput from '../../components/ui/SearchInput';
 import Modal from '../../components/ui/Modal';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import PageBanner from '../../components/ui/PageBanner';
-import { Clock, Plus, Edit2, Trash2, Users, Loader2, Sparkles } from 'lucide-react';
+import { cn } from '../../lib/utils';
+import {
+  Clock,
+  Plus,
+  Edit2,
+  Trash2,
+  Users,
+  UserCheck,
+  Timer,
+  Layers,
+  Loader2,
+} from 'lucide-react';
 
 export function ShiftsPage() {
   const queryClient = useQueryClient();
@@ -22,6 +34,11 @@ export function ShiftsPage() {
   const [endTime, setEndTime] = useState('18:00:00');
   const [graceMinutes, setGraceMinutes] = useState(15);
 
+  // Search & Filter State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [staffFilter, setStaffFilter] = useState(''); // '' | 'staffed' | 'empty'
+  const [sortBy, setSortBy] = useState('name'); // 'name' | 'time' | 'staff-desc'
+
   // 1. Fetch Shifts
   const { data: shifts = [], isLoading: loadingShifts } = useQuery({
     queryKey: ['shifts'],
@@ -33,6 +50,65 @@ export function ShiftsPage() {
     queryKey: ['employees'],
     queryFn: employeesApi.getAll,
   });
+
+  // Shift staff mapping
+  const shiftStaffMap = useMemo(() => {
+    const map = new Map();
+    employees.forEach((emp) => {
+      if (emp.shift_id) {
+        map.set(emp.shift_id, (map.get(emp.shift_id) || 0) + 1);
+      }
+    });
+    return map;
+  }, [employees]);
+
+  // Metric Calculations
+  const totalShiftsCount = shifts.length;
+  const assignedEmployeesCount = useMemo(() => {
+    return employees.filter((emp) => Boolean(emp.shift_id)).length;
+  }, [employees]);
+
+  const staffedShiftsCount = useMemo(() => {
+    return shifts.filter((shift) => (shiftStaffMap.get(shift.id) || 0) > 0).length;
+  }, [shifts, shiftStaffMap]);
+
+  const emptyShiftsCount = useMemo(() => {
+    return shifts.filter((shift) => (shiftStaffMap.get(shift.id) || 0) === 0).length;
+  }, [shifts, shiftStaffMap]);
+
+  const avgGraceMinutes = useMemo(() => {
+    if (shifts.length === 0) return 0;
+    const total = shifts.reduce((acc, s) => acc + (s.grace_minutes || 0), 0);
+    return Math.round(total / shifts.length);
+  }, [shifts]);
+
+  // Filtered & Sorted Shifts
+  const filteredShifts = useMemo(() => {
+    return shifts
+      .filter((shift) => {
+        // Search
+        if (searchQuery) {
+          const query = searchQuery.toLowerCase();
+          const nameMatch = shift.shift_name.toLowerCase().includes(query);
+          const timeMatch = `${shift.start_time} ${shift.end_time}`.toLowerCase().includes(query);
+          if (!nameMatch && !timeMatch) return false;
+        }
+
+        // Staffing Filter
+        const staffCount = shiftStaffMap.get(shift.id) || 0;
+        if (staffFilter === 'staffed' && staffCount === 0) return false;
+        if (staffFilter === 'empty' && staffCount > 0) return false;
+
+        return true;
+      })
+      .sort((a, b) => {
+        const countA = shiftStaffMap.get(a.id) || 0;
+        const countB = shiftStaffMap.get(b.id) || 0;
+        if (sortBy === 'staff-desc') return countB - countA;
+        if (sortBy === 'time') return (a.start_time || '').localeCompare(b.start_time || '');
+        return a.shift_name.localeCompare(b.shift_name);
+      });
+  }, [shifts, searchQuery, staffFilter, sortBy, shiftStaffMap]);
 
   // Create Mutation
   const createMutation = useMutation({
@@ -127,16 +203,187 @@ export function ShiftsPage() {
         badgeIcon={Clock}
         title="Work Shifts & Schedules"
         description="Configure standard shift operational hours, late arrival grace windows, and roster allocations."
-        actions={
-          <button
-            onClick={handleOpenCreate}
-            className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-semibold text-indigo-950 bg-white hover:bg-indigo-50 active:bg-indigo-100 rounded-xl shadow-md transition-all cursor-pointer"
-          >
-            <Plus className="w-4 h-4 text-indigo-600" />
-            Add Shift
-          </button>
-        }
       />
+
+      {/* Real-Time Blue Theme Metric Toggles */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Total Shifts Toggle */}
+        <button
+          type="button"
+          onClick={() => {
+            setSearchQuery('');
+            setStaffFilter('');
+            setSortBy('name');
+          }}
+          className={cn(
+            'flex items-center justify-between p-4 sm:p-5 rounded-2xl border text-left transition-all duration-200 cursor-pointer shadow-xs hover:shadow-md group min-h-[82px]',
+            !searchQuery && !staffFilter && sortBy === 'name'
+              ? 'bg-gradient-to-br from-blue-50/90 via-indigo-50/70 to-blue-50/50 border-blue-500/60 ring-2 ring-blue-500/20'
+              : 'bg-white border-slate-200/80 hover:border-blue-300 hover:bg-blue-50/30'
+          )}
+        >
+          <div className="min-w-0 pr-3">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block truncate">
+              Total Shifts
+            </span>
+            <div className="flex items-baseline gap-2 mt-1">
+              <span className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 leading-none">
+                {totalShiftsCount}
+              </span>
+              <span className="text-xs text-blue-600 font-medium truncate">All Schedules</span>
+            </div>
+          </div>
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-blue-100/70 border border-blue-200/60 text-blue-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
+            <Clock className="w-5 h-5" />
+          </div>
+        </button>
+
+        {/* Assigned Staff */}
+        <button
+          type="button"
+          onClick={() => setStaffFilter('')}
+          className="flex items-center justify-between p-4 sm:p-5 rounded-2xl border border-slate-200/80 bg-white hover:border-blue-300 hover:bg-blue-50/30 text-left transition-all duration-200 cursor-pointer shadow-xs hover:shadow-md group min-h-[82px]"
+        >
+          <div className="min-w-0 pr-3">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block truncate">
+              Assigned Staff
+            </span>
+            <div className="flex items-baseline gap-2 mt-1">
+              <span className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 leading-none">
+                {assignedEmployeesCount}
+              </span>
+              <span className="text-xs text-blue-600 font-medium truncate">
+                {employees.length > 0 ? Math.round((assignedEmployeesCount / employees.length) * 100) : 0}% On Roster
+              </span>
+            </div>
+          </div>
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-blue-100/70 border border-blue-200/60 text-blue-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
+            <Users className="w-5 h-5" />
+          </div>
+        </button>
+
+        {/* Active Staffed Shifts Toggle */}
+        <button
+          type="button"
+          onClick={() => setStaffFilter(staffFilter === 'staffed' ? '' : 'staffed')}
+          className={cn(
+            'flex items-center justify-between p-4 sm:p-5 rounded-2xl border text-left transition-all duration-200 cursor-pointer shadow-xs hover:shadow-md group min-h-[82px]',
+            staffFilter === 'staffed'
+              ? 'bg-gradient-to-br from-blue-50/90 via-indigo-50/70 to-blue-50/50 border-blue-500/60 ring-2 ring-blue-500/20'
+              : 'bg-white border-slate-200/80 hover:border-blue-300 hover:bg-blue-50/30'
+          )}
+        >
+          <div className="min-w-0 pr-3">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block truncate">
+              Active Rosters
+            </span>
+            <div className="flex items-baseline gap-2 mt-1">
+              <span className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 leading-none">
+                {staffedShiftsCount}
+              </span>
+              <span className="text-xs text-blue-600 font-medium truncate">
+                {totalShiftsCount > 0 ? Math.round((staffedShiftsCount / totalShiftsCount) * 100) : 0}% Staffed
+              </span>
+            </div>
+          </div>
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-blue-100/70 border border-blue-200/60 text-blue-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
+            <UserCheck className="w-5 h-5" />
+          </div>
+        </button>
+
+        {/* Avg Grace Period */}
+        <button
+          type="button"
+          onClick={() => {
+            setSearchQuery('');
+            setStaffFilter('');
+            setSortBy('time');
+          }}
+          className={cn(
+            'flex items-center justify-between p-4 sm:p-5 rounded-2xl border text-left transition-all duration-200 cursor-pointer shadow-xs hover:shadow-md group min-h-[82px]',
+            sortBy === 'time'
+              ? 'bg-gradient-to-br from-blue-50/90 via-indigo-50/70 to-blue-50/50 border-blue-500/60 ring-2 ring-blue-500/20'
+              : 'bg-white border-slate-200/80 hover:border-blue-300 hover:bg-blue-50/30'
+          )}
+        >
+          <div className="min-w-0 pr-3">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block truncate">
+              Avg Grace Period
+            </span>
+            <div className="flex items-baseline gap-2 mt-1">
+              <span className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 leading-none">
+                {avgGraceMinutes}m
+              </span>
+              <span className="text-xs text-blue-600 font-medium truncate">Standard Window</span>
+            </div>
+          </div>
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-blue-100/70 border border-blue-200/60 text-blue-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
+            <Timer className="w-5 h-5" />
+          </div>
+        </button>
+      </div>
+
+      {/* Search & Filter Toolbar with Add Shift Action */}
+      <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
+        <div className="flex flex-col xl:flex-row xl:items-center gap-3 justify-between">
+          <div className="flex flex-1 flex-col md:flex-row md:items-center gap-3">
+            <SearchInput
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Search shifts by name or timing (e.g. 09:00)..."
+              className="w-full md:max-w-xs"
+            />
+
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Staffing Filter */}
+              <select
+                value={staffFilter}
+                onChange={(e) => setStaffFilter(e.target.value)}
+                className="px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              >
+                <option value="">All Shifts</option>
+                <option value="staffed">Staffed Rosters ({staffedShiftsCount})</option>
+                <option value="empty">Unstaffed Shifts ({emptyShiftsCount})</option>
+              </select>
+
+              {/* Sort Filter */}
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              >
+                <option value="name">Sort by Name (A-Z)</option>
+                <option value="time">Start Time (Early to Late)</option>
+                <option value="staff-desc">Most Staff (High to Low)</option>
+              </select>
+
+              {(searchQuery || staffFilter || sortBy !== 'name') && (
+                <button
+                  onClick={() => {
+                    setSearchQuery('');
+                    setStaffFilter('');
+                    setSortBy('name');
+                  }}
+                  className="px-3 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+                >
+                  Clear Filters
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Add Shift Action */}
+          <div className="flex items-center justify-end pt-2 xl:pt-0 border-t xl:border-t-0 border-slate-100">
+            <button
+              onClick={handleOpenCreate}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-xl shadow-xs hover:shadow transition-all cursor-pointer shrink-0"
+            >
+              <Plus className="w-4 h-4 text-white" />
+              Add Shift
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* Grid of Shift Cards */}
       {loadingShifts ? (
@@ -145,22 +392,41 @@ export function ShiftsPage() {
             <div key={i} className="h-44 bg-white rounded-2xl border border-slate-200 animate-pulse" />
           ))}
         </div>
-      ) : shifts.length === 0 ? (
+      ) : filteredShifts.length === 0 ? (
         <div className="text-center py-16 bg-white rounded-2xl border border-dashed border-slate-200">
           <Clock className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-          <h3 className="text-sm font-semibold text-slate-900">No work shifts defined</h3>
-          <p className="text-xs text-slate-500 mt-1 mb-4">Create standard morning or night shifts for attendance tracking.</p>
-          <button
-            onClick={handleOpenCreate}
-            className="px-4 py-2 text-xs font-semibold text-white bg-indigo-600 rounded-xl cursor-pointer"
-          >
-            Add Shift
-          </button>
+          <h3 className="text-sm font-semibold text-slate-900">
+            {searchQuery || staffFilter ? 'No matching shifts' : 'No work shifts defined'}
+          </h3>
+          <p className="text-xs text-slate-500 mt-1 mb-4">
+            {searchQuery || staffFilter
+              ? 'Try clearing your search or filters to see all shifts.'
+              : 'Create standard morning or night shifts for attendance tracking.'}
+          </p>
+          {searchQuery || staffFilter ? (
+            <button
+              onClick={() => {
+                setSearchQuery('');
+                setStaffFilter('');
+                setSortBy('name');
+              }}
+              className="px-4 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl cursor-pointer"
+            >
+              Clear Filters
+            </button>
+          ) : (
+            <button
+              onClick={handleOpenCreate}
+              className="px-4 py-2 text-xs font-semibold text-white bg-indigo-600 rounded-xl cursor-pointer"
+            >
+              Add Shift
+            </button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {shifts.map((shift) => {
-            const count = employees.filter((e) => e.shift_id === shift.id).length;
+          {filteredShifts.map((shift) => {
+            const count = shiftStaffMap.get(shift.id) || 0;
 
             return (
               <div
@@ -169,7 +435,7 @@ export function ShiftsPage() {
               >
                 <div className="space-y-4">
                   <div className="flex items-start justify-between gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-sky-50 border border-sky-100 flex items-center justify-center text-sky-600">
+                    <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600">
                       <Clock className="w-5 h-5" />
                     </div>
 
@@ -194,7 +460,7 @@ export function ShiftsPage() {
                   <div>
                     <h3 className="text-base font-bold text-slate-900">{shift.shift_name}</h3>
                     <div className="flex items-center gap-2 mt-2">
-                      <span className="font-mono text-xs font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100">
+                      <span className="font-mono text-xs font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-100">
                         {shift.start_time} - {shift.end_time}
                       </span>
                       <span className="text-[11px] text-slate-500 font-medium">
@@ -206,7 +472,7 @@ export function ShiftsPage() {
 
                 <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-xs">
                   <span className="flex items-center gap-1.5 text-slate-500 font-medium">
-                    <Users className="w-4 h-4 text-slate-400" />
+                    <Users className="w-4 h-4 text-blue-600" />
                     {count} Assigned {count === 1 ? 'Employee' : 'Employees'}
                   </span>
                   <span className="font-mono text-[10px] text-slate-400">{shift.id.substring(0, 8)}</span>
