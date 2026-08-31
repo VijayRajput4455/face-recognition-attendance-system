@@ -129,21 +129,33 @@ class EnrollmentProcessingOrchestrator:
             "Extracting frames."
         )
 
+        source_path = Path(message.video_path)
+        frames_dir = Path(settings.FRAMES_STORAGE_PATH) / message.employee_code
+        frames_dir.mkdir(parents=True, exist_ok=True)
+
+        if source_path.is_dir():
+            logger.info(
+                "Source is an images directory. Processing uploaded face images.",
+                extra={"images_path": str(source_path)}
+            )
+            image_files = sorted([
+                f for f in source_path.iterdir()
+                if f.suffix.lower() in [".jpg", ".jpeg", ".png", ".webp", ".bmp"]
+            ])
+            for idx, img_file in enumerate(image_files):
+                target_path = frames_dir / f"frame_{idx:04d}.jpg"
+                img = cv2.imread(str(img_file))
+                if img is not None:
+                    cv2.imwrite(str(target_path), img)
+
+            return frames_dir
+
         self.frame_service.extract_frames(
-
             video_path=message.video_path,
-
             employee_code=message.employee_code,
-
         )
 
-        return (
-
-            Path(settings.FRAMES_STORAGE_PATH)
-
-            / message.employee_code
-
-        )
+        return frames_dir
 
     # ======================================================
     # Embedding Generation
@@ -256,7 +268,7 @@ class EnrollmentProcessingOrchestrator:
     ) -> None:
 
         logger.info(
-            "Saving embedding into Milvus.",
+            "Saving face embedding vector into Milvus gallery.",
             extra={
                 "employee_id": message.employee_id,
                 "employee_code": message.employee_code,
@@ -264,17 +276,13 @@ class EnrollmentProcessingOrchestrator:
         )
 
         self.milvus_service.insert(
-
             employee_id=message.employee_id,
-
             employee_code=message.employee_code,
-
             embedding=embedding,
-
         )
 
         logger.info(
-            "Embedding stored successfully.",
+            "Face embedding vector inserted into Milvus successfully.",
             extra={
                 "employee_id": message.employee_id,
                 "employee_code": message.employee_code,

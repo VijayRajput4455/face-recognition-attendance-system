@@ -55,6 +55,33 @@ def start_enrollment(
 
 
 # ==========================================================
+# Start Enrollment with Multiple Images
+# ==========================================================
+
+@router.post(
+    "/images",
+    status_code=status.HTTP_201_CREATED,
+)
+def start_images_enrollment(
+    employee_id: UUID = Form(...),
+    image_files: list[UploadFile] = File(...),
+):
+
+    logger.info(
+        "Images enrollment request received.",
+        extra={
+            "employee_id": str(employee_id),
+            "total_images": len(image_files),
+        },
+    )
+
+    return enrollment_orchestrator.start_images(
+        employee_id=employee_id,
+        image_files=image_files,
+    )
+
+
+# ==========================================================
 # Get All Enrollments
 # ==========================================================
 

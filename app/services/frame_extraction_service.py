@@ -25,6 +25,47 @@ class FrameExtractionService:
             exist_ok=True,
         )
 
+        source_path = Path(video_path)
+
+        # ---------------------------------------------------------
+        # Case 1: Directory of uploaded face images
+        # ---------------------------------------------------------
+        if source_path.is_dir() or str(video_path).endswith("images"):
+            logger.info("Extracting frames from images directory: %s", video_path)
+            frame_paths: list[Path] = []
+            image_extensions = {".jpg", ".jpeg", ".png", ".webp", ".bmp"}
+            
+            if source_path.exists():
+                image_files = sorted([
+                    f for f in source_path.iterdir()
+                    if f.suffix.lower() in image_extensions
+                ])
+                for idx, img_file in enumerate(image_files):
+                    img = cv2.imread(str(img_file))
+                    if img is not None:
+                        target_path = output_dir / f"frame_{idx:06d}.jpg"
+                        cv2.imwrite(str(target_path), img)
+                        frame_paths.append(target_path)
+
+            logger.info("Extracted %d frames from images directory", len(frame_paths))
+            return frame_paths
+
+        # ---------------------------------------------------------
+        # Case 2: Single image file
+        # ---------------------------------------------------------
+        if source_path.is_file() and source_path.suffix.lower() in {".jpg", ".jpeg", ".png", ".webp", ".bmp"}:
+            logger.info("Extracting single image frame: %s", video_path)
+            frame_paths = []
+            img = cv2.imread(str(source_path))
+            if img is not None:
+                target_path = output_dir / "frame_000000.jpg"
+                cv2.imwrite(str(target_path), img)
+                frame_paths.append(target_path)
+            return frame_paths
+
+        # ---------------------------------------------------------
+        # Case 3: Video file (MP4, WebM, AVI, etc.)
+        # ---------------------------------------------------------
         cap = cv2.VideoCapture(video_path)
 
         if not cap.isOpened():

@@ -152,6 +152,122 @@ class EnrollmentOrchestrator:
             db.close()
 
     # ==========================================================
+    # Start Enrollment with Multiple Images
+    # ==========================================================
+
+    def start_images(
+        self,
+        employee_id: UUID,
+        image_files: list[UploadFile],
+    ):
+
+        db = SessionLocal()
+
+        try:
+
+            # --------------------------------------------------
+            # Validate Employee
+            # --------------------------------------------------
+
+            employee = self.employee_repository.get_by_id(
+                db=db,
+                employee_id=employee_id,
+            )
+
+            if employee is None:
+
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Employee not found.",
+                )
+
+            # --------------------------------------------------
+            # Check Pending Enrollment
+            # --------------------------------------------------
+
+            existing = (
+                self.enrollment_repository
+                .get_pending_by_employee(
+                    db=db,
+                    employee_id=employee_id,
+                )
+            )
+
+            if existing:
+
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="Employee already has a pending enrollment.",
+                )
+
+            if not image_files:
+
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="No images provided for enrollment.",
+                )
+
+            # --------------------------------------------------
+            # Save Images
+            # --------------------------------------------------
+
+            images_path = FileHandler.save_images(
+                employee.employee_code,
+                image_files,
+            )
+
+            # --------------------------------------------------
+            # Create Enrollment
+            # --------------------------------------------------
+
+            enrollment = EmployeeEnrollment(
+                employee_id=employee.id,
+                video_path=images_path,
+                status="PENDING",
+            )
+
+            enrollment = self.enrollment_repository.create(
+                db=db,
+                enrollment=enrollment,
+            )
+
+            # --------------------------------------------------
+            # Publish RabbitMQ
+            # --------------------------------------------------
+
+            message = EnrollmentMessage(
+                employee_id=str(employee.id),
+                employee_code=employee.employee_code,
+                enrollment_id=str(enrollment.id),
+                video_path=images_path,
+            )
+
+            self.rabbitmq.publish(
+                "employee_enrollment",
+                message.model_dump(),
+            )
+
+            logger.info(
+                "Image-based enrollment started successfully.",
+                extra={
+                    "employee_id": str(employee.id),
+                    "enrollment_id": str(enrollment.id),
+                    "total_images": len(image_files),
+                },
+            )
+
+            return {
+                "id": str(enrollment.id),
+                "employee_id": str(employee.id),
+                "enrollment_id": str(enrollment.id),
+                "status": "PENDING",
+            }
+
+        finally:
+
+            db.close()
+
+    # ==========================================================
     # Get All Enrollments
     # ==========================================================
 

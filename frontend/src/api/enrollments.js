@@ -16,6 +16,19 @@ export const enrollmentsApi = {
     });
   },
 
+  startWithImages: (employeeId, imageFiles) => {
+    const formData = new FormData();
+    formData.append('employee_id', employeeId);
+    imageFiles.forEach((file) => {
+      formData.append('image_files', file);
+    });
+    return apiClient.post('/enrollments/images', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
+
   retry: (enrollmentId) => apiClient.post(`/enrollments/${enrollmentId}/retry`),
   delete: (id) => apiClient.delete(`/enrollments/${id}`),
   deleteByEmployeeId: (employeeId) => apiClient.delete(`/enrollments/employee/${employeeId}`),

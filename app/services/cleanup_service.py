@@ -84,7 +84,10 @@ class CleanupService:
 
         if not settings.KEEP_ENROLLMENT_VIDEO:
 
-            self.delete_file(video_path)
+            if video_path.is_dir():
+                self.delete_directory(video_path)
+            else:
+                self.delete_file(video_path)
 
         else:
 

@@ -23,6 +23,11 @@ import {
   Cpu,
   Database,
   Search,
+  Images,
+  Image as ImageIcon,
+  Trash2,
+  Plus,
+  X,
 } from 'lucide-react';
 
 export function EnrollmentWizard() {
@@ -37,8 +42,14 @@ export function EnrollmentWizard() {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [employeeSearch, setEmployeeSearch] = useState('');
 
+  // Capture mode: 'images' | 'file' | 'webcam'
+  const [captureMode, setCaptureMode] = useState('images');
+
+  // Multi-image upload state
+  const [imageFiles, setImageFiles] = useState([]);
+  const [imagePreviews, setImagePreviews] = useState([]);
+
   // Video capture / upload state
-  const [captureMode, setCaptureMode] = useState('file'); // 'file' | 'webcam'
   const [videoFile, setVideoFile] = useState(null);
   const [videoPreviewUrl, setVideoPreviewUrl] = useState(null);
 
@@ -78,8 +89,9 @@ export function EnrollmentWizard() {
       if (videoPreviewUrl) {
         URL.revokeObjectURL(videoPreviewUrl);
       }
+      imagePreviews.forEach((item) => URL.revokeObjectURL(item.url));
     };
-  }, [videoPreviewUrl]);
+  }, [videoPreviewUrl, imagePreviews]);
 
   // Webcam streamer init
   const startWebcam = async () => {
@@ -156,6 +168,7 @@ export function EnrollmentWizard() {
     }
   };
 
+  // Handle Video file drop/select
   const handleFileDrop = (e) => {
     e.preventDefault();
     const file = e.dataTransfer?.files?.[0] || e.target?.files?.[0];
@@ -170,13 +183,60 @@ export function EnrollmentWizard() {
     }
   };
 
+  // Handle Multiple Images Upload
+  const handleImagesSelect = (e) => {
+    e.preventDefault();
+    const files = Array.from(e.dataTransfer?.files || e.target?.files || []);
+    if (files.length === 0) return;
+
+    const validImages = files.filter((f) => f.type.startsWith('image/'));
+    if (validImages.length === 0) {
+      toastError('Invalid Format', 'Please upload valid image files (JPG, PNG, JPEG, WebP).');
+      return;
+    }
+
+    const newPreviews = validImages.map((file) => ({
+      file,
+      url: URL.createObjectURL(file),
+      name: file.name,
+      size: (file.size / 1024).toFixed(1) + ' KB',
+    }));
+
+    setImageFiles((prev) => [...prev, ...validImages]);
+    setImagePreviews((prev) => [...prev, ...newPreviews]);
+  };
+
+  const handleRemoveImage = (indexToRemove) => {
+    setImagePreviews((prev) => {
+      URL.revokeObjectURL(prev[indexToRemove]?.url);
+      return prev.filter((_, idx) => idx !== indexToRemove);
+    });
+    setImageFiles((prev) => prev.filter((_, idx) => idx !== indexToRemove));
+  };
+
+  const handleClearAllImages = () => {
+    imagePreviews.forEach((item) => URL.revokeObjectURL(item.url));
+    setImagePreviews([]);
+    setImageFiles([]);
+  };
+
   // Submit Enrollment Mutation
   const enrollMutation = useMutation({
     mutationFn: async () => {
-      if (!selectedEmployee || !videoFile) {
-        throw new Error('Please select an employee and provide a video.');
+      if (!selectedEmployee) {
+        throw new Error('Please select an employee.');
       }
-      return enrollmentsApi.startEnrollment(selectedEmployee.id, videoFile);
+      if (captureMode === 'images') {
+        if (imageFiles.length === 0) {
+          throw new Error('Please upload at least 1 image of the employee.');
+        }
+        return enrollmentsApi.startWithImages(selectedEmployee.id, imageFiles);
+      } else {
+        if (!videoFile) {
+          throw new Error('Please record or upload a video.');
+        }
+        return enrollmentsApi.startEnrollment(selectedEmployee.id, videoFile);
+      }
     },
     onSuccess: (res) => {
       const id = res?.enrollment_id || res?.id;
@@ -268,6 +328,9 @@ export function EnrollmentWizard() {
     );
   });
 
+  const canProceedToEnroll =
+    captureMode === 'images' ? imageFiles.length > 0 : Boolean(videoFile);
+
   return (
     <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in duration-200">
       {/* Header */}
@@ -281,13 +344,13 @@ export function EnrollmentWizard() {
           </button>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">Face Biometric Enrollment</h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Capture or upload video to generate 512-D embeddings and index into Milvus.
+            Upload face images or capture video to generate 512-D InsightFace embeddings and index into Milvus.
           </p>
         </div>
 
         {/* Wizard Step Indicators */}
         <div className="hidden sm:flex items-center gap-2">
-          {['Employee', 'Video Source', 'AI Processing', 'Result'].map((stepName, idx) => {
+          {['Employee', 'Face Media Source', 'AI Processing', 'Result'].map((stepName, idx) => {
             const stepKeys = ['select', 'capture', 'processing', 'result'];
             const stepIdx = stepKeys.indexOf(currentStep);
             const isCompleted = stepIdx > idx;
@@ -384,18 +447,18 @@ export function EnrollmentWizard() {
               disabled={!selectedEmployee}
               className="inline-flex items-center gap-2 px-5 py-2.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-xs transition-all cursor-pointer"
             >
-              Continue to Video Capture <ArrowRight className="w-4 h-4" />
+              Continue to Face Media <ArrowRight className="w-4 h-4" />
             </button>
           </div>
         </div>
       )}
 
-      {/* STEP 2: Video Source & Capture */}
+      {/* STEP 2: Media Source & Capture */}
       {currentStep === 'capture' && (
         <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-xs space-y-6">
-          <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
             <div>
-              <h3 className="text-base font-bold text-slate-900">Step 2: Capture or Upload Video</h3>
+              <h3 className="text-base font-bold text-slate-900">Step 2: Provide Face Photos or Video</h3>
               <p className="text-xs text-slate-500 mt-0.5">
                 Enrolling biometrics for{' '}
                 <strong className="text-slate-900">
@@ -404,36 +467,157 @@ export function EnrollmentWizard() {
               </p>
             </div>
 
-            {/* Switch Mode Tabs */}
-            <div className="flex bg-slate-100 p-1 rounded-xl">
+            {/* Switch Mode Tabs (Images / Video Upload / Live Camera) */}
+            <div className="flex bg-slate-100 p-1 rounded-xl self-start sm:self-auto">
               <button
+                type="button"
+                onClick={() => {
+                  stopWebcam();
+                  setCaptureMode('images');
+                }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                  captureMode === 'images'
+                    ? 'bg-white text-indigo-700 shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <ImageIcon className="w-3.5 h-3.5" />
+                Upload Photos
+              </button>
+              <button
+                type="button"
                 onClick={() => {
                   stopWebcam();
                   setCaptureMode('file');
                 }}
-                className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${
-                  captureMode === 'file' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                  captureMode === 'file'
+                    ? 'bg-white text-indigo-700 shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
+                <Video className="w-3.5 h-3.5" />
                 Upload Video
               </button>
               <button
+                type="button"
                 onClick={() => {
                   setCaptureMode('webcam');
                   startWebcam();
                 }}
-                className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                   captureMode === 'webcam'
-                    ? 'bg-white text-slate-900 shadow-2xs'
-                    : 'text-slate-500 hover:text-slate-800'
+                    ? 'bg-white text-indigo-700 shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
+                <Camera className="w-3.5 h-3.5" />
                 Live Camera
               </button>
             </div>
           </div>
 
-          {/* Mode A: File Upload */}
+          {/* Mode 1: Multiple Images Upload */}
+          {captureMode === 'images' && (
+            <div className="space-y-4">
+              <div
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={handleImagesSelect}
+                className="border-2 border-dashed border-indigo-200 hover:border-indigo-400 bg-indigo-50/20 hover:bg-indigo-50/40 rounded-2xl p-6 sm:p-8 text-center transition-all flex flex-col items-center justify-center space-y-3"
+              >
+                <div className="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center shadow-2xs">
+                  <Images className="w-6 h-6" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-semibold text-slate-900">
+                    Upload Employee Face Photos (Single or Multiple)
+                  </h4>
+                  <p className="text-xs text-slate-500 mt-1 max-w-md">
+                    Drag and drop 1 to 10 photos of the employee. Multiple angles and natural lighting ensure higher recognition accuracy.
+                  </p>
+                </div>
+
+                <label className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-2xs cursor-pointer transition-all">
+                  <Upload className="w-3.5 h-3.5" />
+                  Select Photo Files
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleImagesSelect}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+
+              {/* Photo Previews Grid */}
+              {imagePreviews.length > 0 && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                        Selected Photos ({imagePreviews.length})
+                      </span>
+                      <span className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">
+                        {imagePreviews.length >= 3 ? 'Optimal Quality' : '1+ Ready'}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <label className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 cursor-pointer flex items-center gap-1">
+                        <Plus className="w-3.5 h-3.5" /> Add More
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={handleImagesSelect}
+                          className="hidden"
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        onClick={handleClearAllImages}
+                        className="text-xs text-rose-600 hover:text-rose-700 font-medium cursor-pointer ml-2"
+                      >
+                        Clear All
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                    {imagePreviews.map((img, idx) => (
+                      <div
+                        key={idx}
+                        className="relative group rounded-xl overflow-hidden border border-slate-200 bg-slate-100 aspect-square shadow-2xs"
+                      >
+                        <img
+                          src={img.url}
+                          alt={`Face ${idx + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-md bg-slate-900/70 text-white text-[10px] font-bold backdrop-blur-xs">
+                          #{idx + 1}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveImage(idx)}
+                          className="absolute top-1.5 right-1.5 p-1 rounded-md bg-rose-600 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-rose-700 cursor-pointer shadow-xs"
+                          title="Remove photo"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                        <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-slate-950/80 to-transparent p-1.5 text-[10px] text-white truncate">
+                          {img.name}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Mode 2: Video File Upload */}
           {captureMode === 'file' && (
             <div
               onDragOver={(e) => e.preventDefault()}
@@ -468,7 +652,7 @@ export function EnrollmentWizard() {
             </div>
           )}
 
-          {/* Mode B: Live Webcam Recorder */}
+          {/* Mode 3: Live Webcam Recorder */}
           {captureMode === 'webcam' && (
             <div className="space-y-4">
               <div className="relative bg-slate-900 rounded-2xl overflow-hidden aspect-video max-w-xl mx-auto flex items-center justify-center shadow-inner">
@@ -486,6 +670,7 @@ export function EnrollmentWizard() {
               <div className="flex items-center justify-center gap-3">
                 {!isRecording ? (
                   <button
+                    type="button"
                     onClick={handleStartRecording}
                     className="inline-flex items-center gap-2 px-5 py-2.5 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-xs transition-all cursor-pointer"
                   >
@@ -494,6 +679,7 @@ export function EnrollmentWizard() {
                   </button>
                 ) : (
                   <button
+                    type="button"
                     onClick={handleStopRecording}
                     className="inline-flex items-center gap-2 px-5 py-2.5 text-xs font-semibold text-white bg-slate-800 hover:bg-slate-900 rounded-xl transition-all cursor-pointer"
                   >
@@ -514,17 +700,19 @@ export function EnrollmentWizard() {
           {/* Action Buttons */}
           <div className="flex items-center justify-between pt-4 border-t border-slate-100">
             <button
+              type="button"
               onClick={() => {
                 stopWebcam();
                 setCurrentStep('select');
               }}
-              className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 rounded-xl"
+              className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 rounded-xl cursor-pointer"
             >
               Back
             </button>
             <button
+              type="button"
               onClick={() => enrollMutation.mutate()}
-              disabled={!videoFile || enrollMutation.isPending}
+              disabled={!canProceedToEnroll || enrollMutation.isPending}
               className="inline-flex items-center gap-2 px-6 py-2.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-xs transition-all cursor-pointer"
             >
               {enrollMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
