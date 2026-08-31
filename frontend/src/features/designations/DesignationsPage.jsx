@@ -1,12 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { designationsApi } from '../../api/designations';
 import { employeesApi } from '../../api/employees';
 import { useToast } from '../../context/ToastContext';
+import SearchInput from '../../components/ui/SearchInput';
 import Modal from '../../components/ui/Modal';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import PageBanner from '../../components/ui/PageBanner';
-import { Briefcase, Plus, Edit2, Trash2, Users, Loader2 } from 'lucide-react';
+import { cn } from '../../lib/utils';
+import {
+  Briefcase,
+  Plus,
+  Edit2,
+  Trash2,
+  Users,
+  UserCheck,
+  UserX,
+  Layers,
+  Award,
+  Loader2,
+} from 'lucide-react';
 
 export function DesignationsPage() {
   const queryClient = useQueryClient();
@@ -19,6 +32,11 @@ export function DesignationsPage() {
   const [designationName, setDesignationName] = useState('');
   const [designationDesc, setDesignationDesc] = useState('');
 
+  // Search & Filter State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [staffFilter, setStaffFilter] = useState(''); // '' | 'staffed' | 'empty'
+  const [sortBy, setSortBy] = useState('name'); // 'name' | 'staff-desc' | 'staff-asc'
+
   // 1. Fetch Designations
   const { data: designations = [], isLoading: loadingDesignations } = useQuery({
     queryKey: ['designations'],
@@ -30,6 +48,59 @@ export function DesignationsPage() {
     queryKey: ['employees'],
     queryFn: employeesApi.getAll,
   });
+
+  // Designation staff mapping
+  const desigStaffMap = useMemo(() => {
+    const map = new Map();
+    employees.forEach((emp) => {
+      if (emp.designation_id) {
+        map.set(emp.designation_id, (map.get(emp.designation_id) || 0) + 1);
+      }
+    });
+    return map;
+  }, [employees]);
+
+  // Metric Calculations
+  const totalDesigsCount = designations.length;
+  const assignedEmployeesCount = useMemo(() => {
+    return employees.filter((emp) => Boolean(emp.designation_id)).length;
+  }, [employees]);
+
+  const staffedDesigsCount = useMemo(() => {
+    return designations.filter((desig) => (desigStaffMap.get(desig.id) || 0) > 0).length;
+  }, [designations, desigStaffMap]);
+
+  const emptyDesigsCount = useMemo(() => {
+    return designations.filter((desig) => (desigStaffMap.get(desig.id) || 0) === 0).length;
+  }, [designations, desigStaffMap]);
+
+  // Filtered & Sorted List
+  const filteredDesignations = useMemo(() => {
+    return designations
+      .filter((desig) => {
+        // Search
+        if (searchQuery) {
+          const query = searchQuery.toLowerCase();
+          const nameMatch = desig.designation_name.toLowerCase().includes(query);
+          const descMatch = (desig.description || '').toLowerCase().includes(query);
+          if (!nameMatch && !descMatch) return false;
+        }
+
+        // Staffing Filter
+        const staffCount = desigStaffMap.get(desig.id) || 0;
+        if (staffFilter === 'staffed' && staffCount === 0) return false;
+        if (staffFilter === 'empty' && staffCount > 0) return false;
+
+        return true;
+      })
+      .sort((a, b) => {
+        const countA = desigStaffMap.get(a.id) || 0;
+        const countB = desigStaffMap.get(b.id) || 0;
+        if (sortBy === 'staff-desc') return countB - countA;
+        if (sortBy === 'staff-asc') return countA - countB;
+        return a.designation_name.localeCompare(b.designation_name);
+      });
+  }, [designations, searchQuery, staffFilter, sortBy, desigStaffMap]);
 
   // Create Mutation
   const createMutation = useMutation({
@@ -113,16 +184,183 @@ export function DesignationsPage() {
         badgeIcon={Briefcase}
         title="Workforce Designations"
         description="Configure job titles, organizational roles, and responsibilities across the workforce."
-        actions={
-          <button
-            onClick={handleOpenCreate}
-            className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-semibold text-indigo-950 bg-white hover:bg-indigo-50 active:bg-indigo-100 rounded-xl shadow-md transition-all cursor-pointer"
-          >
-            <Plus className="w-4 h-4 text-indigo-600" />
-            Add Designation
-          </button>
-        }
       />
+
+      {/* Real-Time Blue Theme Metric Toggles */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Total Designations Toggle */}
+        <button
+          type="button"
+          onClick={() => {
+            setSearchQuery('');
+            setStaffFilter('');
+            setSortBy('name');
+          }}
+          className={cn(
+            'flex items-center justify-between p-4 sm:p-5 rounded-2xl border text-left transition-all duration-200 cursor-pointer shadow-xs hover:shadow-md group min-h-[82px]',
+            !searchQuery && !staffFilter && sortBy === 'name'
+              ? 'bg-gradient-to-br from-blue-50/90 via-indigo-50/70 to-blue-50/50 border-blue-500/60 ring-2 ring-blue-500/20'
+              : 'bg-white border-slate-200/80 hover:border-blue-300 hover:bg-blue-50/30'
+          )}
+        >
+          <div className="min-w-0 pr-3">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block truncate">
+              Total Designations
+            </span>
+            <div className="flex items-baseline gap-2 mt-1">
+              <span className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 leading-none">
+                {totalDesigsCount}
+              </span>
+              <span className="text-xs text-blue-600 font-medium truncate">All Job Titles</span>
+            </div>
+          </div>
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-blue-100/70 border border-blue-200/60 text-blue-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
+            <Briefcase className="w-5 h-5" />
+          </div>
+        </button>
+
+        {/* Assigned Staff */}
+        <button
+          type="button"
+          onClick={() => setStaffFilter('')}
+          className="flex items-center justify-between p-4 sm:p-5 rounded-2xl border border-slate-200/80 bg-white hover:border-blue-300 hover:bg-blue-50/30 text-left transition-all duration-200 cursor-pointer shadow-xs hover:shadow-md group min-h-[82px]"
+        >
+          <div className="min-w-0 pr-3">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block truncate">
+              Assigned Roles
+            </span>
+            <div className="flex items-baseline gap-2 mt-1">
+              <span className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 leading-none">
+                {assignedEmployeesCount}
+              </span>
+              <span className="text-xs text-blue-600 font-medium truncate">
+                {employees.length > 0 ? Math.round((assignedEmployeesCount / employees.length) * 100) : 0}% Assigned
+              </span>
+            </div>
+          </div>
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-blue-100/70 border border-blue-200/60 text-blue-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
+            <Users className="w-5 h-5" />
+          </div>
+        </button>
+
+        {/* Active Staffed Roles Toggle */}
+        <button
+          type="button"
+          onClick={() => setStaffFilter(staffFilter === 'staffed' ? '' : 'staffed')}
+          className={cn(
+            'flex items-center justify-between p-4 sm:p-5 rounded-2xl border text-left transition-all duration-200 cursor-pointer shadow-xs hover:shadow-md group min-h-[82px]',
+            staffFilter === 'staffed'
+              ? 'bg-gradient-to-br from-blue-50/90 via-indigo-50/70 to-blue-50/50 border-blue-500/60 ring-2 ring-blue-500/20'
+              : 'bg-white border-slate-200/80 hover:border-blue-300 hover:bg-blue-50/30'
+          )}
+        >
+          <div className="min-w-0 pr-3">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block truncate">
+              Staffed Roles
+            </span>
+            <div className="flex items-baseline gap-2 mt-1">
+              <span className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 leading-none">
+                {staffedDesigsCount}
+              </span>
+              <span className="text-xs text-blue-600 font-medium truncate">
+                {totalDesigsCount > 0 ? Math.round((staffedDesigsCount / totalDesigsCount) * 100) : 0}% Active
+              </span>
+            </div>
+          </div>
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-blue-100/70 border border-blue-200/60 text-blue-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
+            <UserCheck className="w-5 h-5" />
+          </div>
+        </button>
+
+        {/* Vacant / Unstaffed Roles Toggle */}
+        <button
+          type="button"
+          onClick={() => setStaffFilter(staffFilter === 'empty' ? '' : 'empty')}
+          className={cn(
+            'flex items-center justify-between p-4 sm:p-5 rounded-2xl border text-left transition-all duration-200 cursor-pointer shadow-xs hover:shadow-md group min-h-[82px]',
+            staffFilter === 'empty'
+              ? 'bg-gradient-to-br from-blue-50/90 via-indigo-50/70 to-blue-50/50 border-blue-500/60 ring-2 ring-blue-500/20'
+              : 'bg-white border-slate-200/80 hover:border-blue-300 hover:bg-blue-50/30'
+          )}
+        >
+          <div className="min-w-0 pr-3">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block truncate">
+              Vacant Roles
+            </span>
+            <div className="flex items-baseline gap-2 mt-1">
+              <span className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 leading-none">
+                {emptyDesigsCount}
+              </span>
+              <span className="text-xs text-blue-600 font-medium truncate">0 Staff</span>
+            </div>
+          </div>
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-blue-100/70 border border-blue-200/60 text-blue-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
+            <Award className="w-5 h-5" />
+          </div>
+        </button>
+      </div>
+
+      {/* Search & Filter Toolbar with Add Designation Action */}
+      <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
+        <div className="flex flex-col xl:flex-row xl:items-center gap-3 justify-between">
+          <div className="flex flex-1 flex-col md:flex-row md:items-center gap-3">
+            <SearchInput
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Search designations by title or description..."
+              className="w-full md:max-w-xs"
+            />
+
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Staffing Filter */}
+              <select
+                value={staffFilter}
+                onChange={(e) => setStaffFilter(e.target.value)}
+                className="px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              >
+                <option value="">All Roles</option>
+                <option value="staffed">Staffed Roles ({staffedDesigsCount})</option>
+                <option value="empty">Vacant Roles ({emptyDesigsCount})</option>
+              </select>
+
+              {/* Sort Filter */}
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              >
+                <option value="name">Sort by Title (A-Z)</option>
+                <option value="staff-desc">Most Staff (High to Low)</option>
+                <option value="staff-asc">Fewest Staff (Low to High)</option>
+              </select>
+
+              {(searchQuery || staffFilter || sortBy !== 'name') && (
+                <button
+                  onClick={() => {
+                    setSearchQuery('');
+                    setStaffFilter('');
+                    setSortBy('name');
+                  }}
+                  className="px-3 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+                >
+                  Clear Filters
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Add Designation Action */}
+          <div className="flex items-center justify-end pt-2 xl:pt-0 border-t xl:border-t-0 border-slate-100">
+            <button
+              onClick={handleOpenCreate}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-xl shadow-xs hover:shadow transition-all cursor-pointer shrink-0"
+            >
+              <Plus className="w-4 h-4 text-white" />
+              Add Designation
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* Grid of Designation Cards */}
       {loadingDesignations ? (
@@ -131,22 +369,41 @@ export function DesignationsPage() {
             <div key={i} className="h-44 bg-white rounded-2xl border border-slate-200 animate-pulse" />
           ))}
         </div>
-      ) : designations.length === 0 ? (
+      ) : filteredDesignations.length === 0 ? (
         <div className="text-center py-16 bg-white rounded-2xl border border-dashed border-slate-200">
           <Briefcase className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-          <h3 className="text-sm font-semibold text-slate-900">No designations configured</h3>
-          <p className="text-xs text-slate-500 mt-1 mb-4">Create job titles to assign to workforce members.</p>
-          <button
-            onClick={handleOpenCreate}
-            className="px-4 py-2 text-xs font-semibold text-white bg-indigo-600 rounded-xl cursor-pointer"
-          >
-            Add Designation
-          </button>
+          <h3 className="text-sm font-semibold text-slate-900">
+            {searchQuery || staffFilter ? 'No matching designations' : 'No designations configured'}
+          </h3>
+          <p className="text-xs text-slate-500 mt-1 mb-4">
+            {searchQuery || staffFilter
+              ? 'Try clearing your search or filters to see all designations.'
+              : 'Create job titles to assign to workforce members.'}
+          </p>
+          {searchQuery || staffFilter ? (
+            <button
+              onClick={() => {
+                setSearchQuery('');
+                setStaffFilter('');
+                setSortBy('name');
+              }}
+              className="px-4 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl cursor-pointer"
+            >
+              Clear Filters
+            </button>
+          ) : (
+            <button
+              onClick={handleOpenCreate}
+              className="px-4 py-2 text-xs font-semibold text-white bg-indigo-600 rounded-xl cursor-pointer"
+            >
+              Add Designation
+            </button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {designations.map((desig) => {
-            const count = employees.filter((e) => e.designation_id === desig.id).length;
+          {filteredDesignations.map((desig) => {
+            const count = desigStaffMap.get(desig.id) || 0;
 
             return (
               <div
@@ -155,7 +412,7 @@ export function DesignationsPage() {
               >
                 <div className="space-y-3">
                   <div className="flex items-start justify-between gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600">
+                    <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600">
                       <Briefcase className="w-5 h-5" />
                     </div>
 
@@ -187,7 +444,7 @@ export function DesignationsPage() {
 
                 <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-xs">
                   <span className="flex items-center gap-1.5 text-slate-500 font-medium">
-                    <Users className="w-4 h-4 text-slate-400" />
+                    <Users className="w-4 h-4 text-blue-600" />
                     {count} {count === 1 ? 'Employee' : 'Employees'}
                   </span>
                   <span className="font-mono text-[10px] text-slate-400">{desig.id.substring(0, 8)}</span>
