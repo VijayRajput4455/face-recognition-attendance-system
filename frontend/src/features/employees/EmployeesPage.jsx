@@ -341,7 +341,31 @@ export function EmployeesPage() {
       sortable: true,
       render: (emp) => {
         const status = emp.employment_status || 'ACTIVE';
-        return <StatusBadge status={status} type="employment" />;
+        const isActive = status === 'ACTIVE';
+        const isMutating = toggleStatusMutation.isPending && toggleStatusMutation.variables?.id === emp.id;
+
+        return (
+          <button
+            type="button"
+            onClick={(e) => handleToggleStatus(emp, e)}
+            disabled={isMutating}
+            title={isActive ? 'Click to deactivate employee' : 'Click to activate employee'}
+            className={cn(
+              'group inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full border shadow-2xs transition-all duration-150 cursor-pointer select-none hover:scale-105 active:scale-95 disabled:opacity-50',
+              isActive
+                ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300'
+                : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200 hover:border-slate-300'
+            )}
+          >
+            <span
+              className={cn(
+                'w-2 h-2 rounded-full transition-transform group-hover:scale-125',
+                isActive ? 'bg-emerald-500' : 'bg-slate-400'
+              )}
+            />
+            <span>{isActive ? 'Active' : 'Inactive'}</span>
+          </button>
+        );
       },
     },
     {

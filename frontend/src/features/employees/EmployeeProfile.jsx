@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { employeesApi } from '../../api/employees';
 import { departmentsApi } from '../../api/departments';
 import { designationsApi } from '../../api/designations';
@@ -8,6 +8,7 @@ import { enrollmentsApi } from '../../api/enrollments';
 import { attendanceApi } from '../../api/attendance';
 import { milvusApi } from '../../api/milvus';
 import { useNavigation } from '../../context/NavigationContext';
+import { useToast } from '../../context/ToastContext';
 import StatusBadge from '../../components/ui/StatusBadge';
 import DataTable from '../../components/ui/DataTable';
 import StatCard from '../../components/ui/StatCard';
@@ -20,6 +21,7 @@ import {
   formatConfidence,
   getInitials,
   getAvatarColor,
+  cn,
 } from '../../lib/utils';
 import {
   ArrowLeft,
@@ -39,14 +41,30 @@ import {
   CheckCircle2,
   XCircle,
   Sparkles,
+  Power,
 } from 'lucide-react';
 
 export function EmployeeProfile() {
+  const queryClient = useQueryClient();
   const { pageParams, navigate } = useNavigation();
+  const { success, error: toastError } = useToast();
   const employeeId = pageParams.employeeId;
 
   const [activeTab, setActiveTab] = useState('overview');
   const [isEditDrawerOpen, setIsEditDrawerOpen] = useState(false);
+
+  // Status Toggle Mutation
+  const toggleStatusMutation = useMutation({
+    mutationFn: ({ id, newStatus }) => employeesApi.update(id, { employment_status: newStatus }),
+    onSuccess: (updated) => {
+      queryClient.invalidateQueries({ queryKey: ['employee', employeeId] });
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
+      success('Status Updated', `${updated.first_name} is now ${updated.employment_status}.`);
+    },
+    onError: (err) => {
+      toastError('Update Failed', err.message);
+    },
+  });
 
   // Month & Year for Monthly Report tab
   const now = new Date();
@@ -185,7 +203,19 @@ export function EmployeeProfile() {
                 <span className="font-mono text-xs font-semibold px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
                   {employee.employee_code}
                 </span>
-                <StatusBadge status={employee.employment_status} />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const currentStatus = employee.employment_status || 'ACTIVE';
+                    const newStatus = currentStatus === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+                    toggleStatusMutation.mutate({ id: employee.id, newStatus });
+                  }}
+                  disabled={toggleStatusMutation.isPending}
+                  title={(employee.employment_status || 'ACTIVE') === 'ACTIVE' ? 'Click to deactivate' : 'Click to activate'}
+                  className="cursor-pointer hover:scale-105 active:scale-95 transition-transform"
+                >
+                  <StatusBadge status={employee.employment_status || 'ACTIVE'} type="employment" />
+                </button>
                 <StatusBadge status={latestEnrollment?.status || 'PENDING'} type="enrollment" />
               </div>
 
