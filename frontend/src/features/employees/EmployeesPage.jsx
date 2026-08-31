@@ -392,63 +392,87 @@ export function EmployeesPage() {
         const isEmpActive = (emp.employment_status || 'ACTIVE') === 'ACTIVE';
 
         return (
-          <div className="relative inline-block text-left" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+            {/* Direct Edit Button */}
             <button
-              onClick={() => setActiveMenuId(activeMenuId === emp.id ? null : emp.id)}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
-              aria-label="Actions"
+              onClick={(e) => handleEdit(emp, e)}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50/80 transition-colors cursor-pointer"
+              title="Edit Employee"
+              aria-label="Edit Employee"
             >
-              <MoreVertical className="w-4 h-4" />
+              <Edit2 className="w-4 h-4" />
             </button>
 
-            {activeMenuId === emp.id && (
-              <>
-                <div className="fixed inset-0 z-30" onClick={() => setActiveMenuId(null)} />
-                <div className="absolute right-0 mt-1 w-48 bg-white rounded-2xl border border-slate-200 shadow-xl py-1.5 z-40 animate-in fade-in zoom-in-95 duration-150">
-                  <button
-                    onClick={(e) => handleViewProfile(emp, e)}
-                    className="w-full flex items-center gap-2 px-3.5 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 hover:text-indigo-600 transition-colors cursor-pointer"
-                  >
-                    <Eye className="w-3.5 h-3.5 text-slate-400" />
-                    View Profile
-                  </button>
-                  <button
-                    onClick={(e) => handleEnrollFace(emp, e)}
-                    className="w-full flex items-center gap-2 px-3.5 py-2 text-xs font-medium text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors cursor-pointer"
-                  >
-                    <ScanFace className="w-3.5 h-3.5 text-indigo-600" />
-                    Enroll Biometrics
-                  </button>
-                  <button
-                    onClick={(e) => handleEdit(emp, e)}
-                    className="w-full flex items-center gap-2 px-3.5 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors cursor-pointer"
-                  >
-                    <Edit2 className="w-3.5 h-3.5 text-slate-400" />
-                    Edit Details
-                  </button>
-                  <button
-                    onClick={(e) => handleToggleStatus(emp, e)}
-                    className={cn(
-                      'w-full flex items-center gap-2 px-3.5 py-2 text-xs font-medium transition-colors cursor-pointer',
-                      isEmpActive
-                        ? 'text-amber-700 hover:bg-amber-50'
-                        : 'text-emerald-700 hover:bg-emerald-50'
-                    )}
-                  >
-                    <Power className="w-3.5 h-3.5" />
-                    {isEmpActive ? 'Set as Inactive' : 'Set as Active'}
-                  </button>
-                  <div className="my-1 border-t border-slate-100" />
-                  <button
-                    onClick={(e) => handleDelete(emp, e)}
-                    className="w-full flex items-center gap-2 px-3.5 py-2 text-xs font-medium text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    Delete Record
-                  </button>
-                </div>
-              </>
-            )}
+            {/* Direct Delete Button */}
+            <button
+              onClick={(e) => handleDelete(emp, e)}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+              title="Delete Employee"
+              aria-label="Delete Employee"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+
+            {/* More Options Dropdown */}
+            <div className="relative inline-block text-left">
+              <button
+                onClick={() => setActiveMenuId(activeMenuId === emp.id ? null : emp.id)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                title="More Options"
+                aria-label="More Options"
+              >
+                <MoreVertical className="w-4 h-4" />
+              </button>
+
+              {activeMenuId === emp.id && (
+                <>
+                  <div className="fixed inset-0 z-30" onClick={() => setActiveMenuId(null)} />
+                  <div className="absolute right-0 mt-1 w-48 bg-white rounded-2xl border border-slate-200 shadow-xl py-1.5 z-40 animate-in fade-in zoom-in-95 duration-150">
+                    <button
+                      onClick={(e) => handleViewProfile(emp, e)}
+                      className="w-full flex items-center gap-2 px-3.5 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 hover:text-indigo-600 transition-colors cursor-pointer"
+                    >
+                      <Eye className="w-3.5 h-3.5 text-slate-400" />
+                      View Profile
+                    </button>
+                    <button
+                      onClick={(e) => handleEnrollFace(emp, e)}
+                      className="w-full flex items-center gap-2 px-3.5 py-2 text-xs font-medium text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors cursor-pointer"
+                    >
+                      <ScanFace className="w-3.5 h-3.5 text-indigo-600" />
+                      Enroll Biometrics
+                    </button>
+                    <button
+                      onClick={(e) => handleEdit(emp, e)}
+                      className="w-full flex items-center gap-2 px-3.5 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors cursor-pointer"
+                    >
+                      <Edit2 className="w-3.5 h-3.5 text-slate-400" />
+                      Edit Details
+                    </button>
+                    <button
+                      onClick={(e) => handleToggleStatus(emp, e)}
+                      className={cn(
+                        'w-full flex items-center gap-2 px-3.5 py-2 text-xs font-medium transition-colors cursor-pointer',
+                        isEmpActive
+                          ? 'text-amber-700 hover:bg-amber-50'
+                          : 'text-emerald-700 hover:bg-emerald-50'
+                      )}
+                    >
+                      <Power className="w-3.5 h-3.5" />
+                      {isEmpActive ? 'Set as Inactive' : 'Set as Active'}
+                    </button>
+                    <div className="my-1 border-t border-slate-100" />
+                    <button
+                      onClick={(e) => handleDelete(emp, e)}
+                      className="w-full flex items-center gap-2 px-3.5 py-2 text-xs font-medium text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      Delete Record
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         );
       },

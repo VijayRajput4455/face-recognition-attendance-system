@@ -13,6 +13,7 @@ import StatusBadge from '../../components/ui/StatusBadge';
 import DataTable from '../../components/ui/DataTable';
 import StatCard from '../../components/ui/StatCard';
 import EmployeeDrawer from './EmployeeDrawer';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import {
   formatDate,
   formatTime,
@@ -35,6 +36,7 @@ import {
   ScanFace,
   Video,
   Edit2,
+  Trash2,
   CalendarCheck2,
   FileText,
   ShieldCheck,
@@ -42,6 +44,7 @@ import {
   XCircle,
   Sparkles,
   Power,
+  AlertTriangle,
 } from 'lucide-react';
 
 export function EmployeeProfile() {
@@ -52,6 +55,7 @@ export function EmployeeProfile() {
 
   const [activeTab, setActiveTab] = useState('overview');
   const [isEditDrawerOpen, setIsEditDrawerOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   // Status Toggle Mutation
   const toggleStatusMutation = useMutation({
@@ -63,6 +67,19 @@ export function EmployeeProfile() {
     },
     onError: (err) => {
       toastError('Update Failed', err.message);
+    },
+  });
+
+  // Delete Mutation
+  const deleteMutation = useMutation({
+    mutationFn: (id) => employeesApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
+      success('Employee Removed', 'The employee record has been deleted.');
+      navigate('employees');
+    },
+    onError: (err) => {
+      toastError('Deletion Failed', err.message);
     },
   });
 
@@ -240,17 +257,24 @@ export function EmployeeProfile() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <button
               onClick={() => setIsEditDrawerOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl shadow-2xs hover:border-slate-300 transition-all cursor-pointer"
             >
-              <Edit2 className="w-3.5 h-3.5" />
+              <Edit2 className="w-3.5 h-3.5 text-slate-500" />
               Edit Details
             </button>
             <button
+              onClick={() => setIsDeleteDialogOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-rose-600 bg-rose-50/70 hover:bg-rose-100 border border-rose-200/80 rounded-xl shadow-2xs transition-all cursor-pointer"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Delete
+            </button>
+            <button
               onClick={handleEnrollClick}
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-xl shadow-xs transition-all cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-xl shadow-xs hover:shadow transition-all cursor-pointer"
             >
               <ScanFace className="w-4 h-4" />
               {isEnrolled ? 'Re-enroll Face' : 'Enroll Biometrics'}
@@ -288,68 +312,110 @@ export function EmployeeProfile() {
 
       {/* Tab 1: Overview */}
       {activeTab === 'overview' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Contact & Personal Info */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs space-y-4">
-            <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3 flex items-center gap-2">
-              <User className="w-4 h-4 text-indigo-600" />
-              Contact Information
-            </h3>
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Contact & Personal Info */}
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <User className="w-4 h-4 text-indigo-600" />
+                  Contact Information
+                </h3>
+                <button
+                  onClick={() => setIsEditDrawerOpen(true)}
+                  className="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+                >
+                  <Edit2 className="w-3 h-3" />
+                  Edit
+                </button>
+              </div>
 
-            <div className="space-y-3 text-xs">
-              <div className="flex justify-between py-1">
-                <span className="text-slate-500 font-medium">Email Address</span>
-                <span className="text-slate-900 font-semibold">{employee.email || 'Not provided'}</span>
+              <div className="space-y-3 text-xs">
+                <div className="flex justify-between py-1">
+                  <span className="text-slate-500 font-medium">Email Address</span>
+                  <span className="text-slate-900 font-semibold">{employee.email || 'Not provided'}</span>
+                </div>
+                <div className="flex justify-between py-1">
+                  <span className="text-slate-500 font-medium">Phone Number</span>
+                  <span className="text-slate-900 font-semibold">{employee.phone || 'Not provided'}</span>
+                </div>
+                <div className="flex justify-between py-1">
+                  <span className="text-slate-500 font-medium">Employee Code</span>
+                  <span className="text-slate-900 font-mono font-semibold">{employee.employee_code}</span>
+                </div>
+                <div className="flex justify-between py-1">
+                  <span className="text-slate-500 font-medium">Joining Date</span>
+                  <span className="text-slate-900 font-semibold">{formatDate(employee.joining_date)}</span>
+                </div>
               </div>
-              <div className="flex justify-between py-1">
-                <span className="text-slate-500 font-medium">Phone Number</span>
-                <span className="text-slate-900 font-semibold">{employee.phone || 'Not provided'}</span>
+            </div>
+
+            {/* Department & Shift Assignment */}
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <Building2 className="w-4 h-4 text-indigo-600" />
+                  Organizational Placement
+                </h3>
+                <button
+                  onClick={() => setIsEditDrawerOpen(true)}
+                  className="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+                >
+                  <Edit2 className="w-3 h-3" />
+                  Edit
+                </button>
               </div>
-              <div className="flex justify-between py-1">
-                <span className="text-slate-500 font-medium">Employee Code</span>
-                <span className="text-slate-900 font-mono font-semibold">{employee.employee_code}</span>
-              </div>
-              <div className="flex justify-between py-1">
-                <span className="text-slate-500 font-medium">Joining Date</span>
-                <span className="text-slate-900 font-semibold">{formatDate(employee.joining_date)}</span>
+
+              <div className="space-y-3 text-xs">
+                <div className="flex justify-between py-1">
+                  <span className="text-slate-500 font-medium">Department</span>
+                  <span className="text-slate-900 font-semibold">
+                    {department?.department_name || 'Unassigned Department'}
+                  </span>
+                </div>
+                <div className="flex justify-between py-1">
+                  <span className="text-slate-500 font-medium">Designation</span>
+                  <span className="text-slate-900 font-semibold">
+                    {designation?.designation_name || 'Unassigned Designation'}
+                  </span>
+                </div>
+                <div className="flex justify-between py-1">
+                  <span className="text-slate-500 font-medium">Shift Schedule</span>
+                  <span className="text-slate-900 font-semibold">{shift?.shift_name || 'General Shift'}</span>
+                </div>
+                <div className="flex justify-between py-1">
+                  <span className="text-slate-500 font-medium">Shift Timings</span>
+                  <span className="text-slate-900 font-semibold">
+                    {shift ? `${formatTime(shift.start_time)} - ${formatTime(shift.end_time)}` : '09:00 AM - 05:00 PM'}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Department & Shift Assignment */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs space-y-4">
-            <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3 flex items-center gap-2">
-              <Building2 className="w-4 h-4 text-indigo-600" />
-              Organizational Placement
-            </h3>
-
-            <div className="space-y-3 text-xs">
-              <div className="flex justify-between py-1">
-                <span className="text-slate-500 font-medium">Department</span>
-                <span className="text-slate-900 font-semibold">
-                  {department?.department_name || 'Unassigned Department'}
-                </span>
-              </div>
-              <div className="flex justify-between py-1">
-                <span className="text-slate-500 font-medium">Designation</span>
-                <span className="text-slate-900 font-semibold">
-                  {designation?.designation_name || 'Unassigned Designation'}
-                </span>
-              </div>
-              <div className="flex justify-between py-1">
-                <span className="text-slate-500 font-medium">Shift Schedule</span>
-                <span className="text-slate-900 font-semibold">{shift?.shift_name || 'General Shift'}</span>
-              </div>
-              <div className="flex justify-between py-1">
-                <span className="text-slate-500 font-medium">Shift Timings</span>
-                <span className="text-slate-900 font-semibold">
-                  {shift ? `${shift.start_time} to ${shift.end_time}` : 'Standard Hours'}
-                </span>
-              </div>
-              <div className="flex justify-between py-1">
-                <span className="text-slate-500 font-medium">Grace Period</span>
-                <span className="text-slate-900 font-semibold">{shift?.grace_minutes ?? 15} minutes</span>
-              </div>
+          {/* Record Actions / Danger Zone */}
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <h4 className="text-sm font-bold text-slate-900">Manage Employee Record</h4>
+              <p className="text-xs text-slate-500">
+                Update employee profile details, reassign shift/department, or permanently remove this record.
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setIsEditDrawerOpen(true)}
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
+              >
+                <Edit2 className="w-3.5 h-3.5" />
+                Edit Profile
+              </button>
+              <button
+                onClick={() => setIsDeleteDialogOpen(true)}
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition-colors cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Delete Employee
+              </button>
             </div>
           </div>
         </div>
@@ -557,6 +623,18 @@ export function EmployeeProfile() {
         isOpen={isEditDrawerOpen}
         onClose={() => setIsEditDrawerOpen(false)}
         employee={employee}
+      />
+
+      {/* Delete Dialog */}
+      <ConfirmDialog
+        isOpen={isDeleteDialogOpen}
+        onClose={() => setIsDeleteDialogOpen(false)}
+        onConfirm={() => deleteMutation.mutate(employee.id)}
+        isLoading={deleteMutation.isPending}
+        danger
+        title="Delete Employee Record?"
+        description={`Are you sure you want to permanently delete ${fullName} (${employee.employee_code})? This action cannot be undone and will delete all biometric embeddings and attendance history.`}
+        confirmText="Delete Record"
       />
     </div>
   );
