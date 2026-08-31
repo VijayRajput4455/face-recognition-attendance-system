@@ -2,6 +2,8 @@ import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { enrollmentsApi } from '../../api/enrollments';
 import { employeesApi } from '../../api/employees';
+import { departmentsApi } from '../../api/departments';
+import { shiftsApi } from '../../api/shifts';
 import { useNavigation } from '../../context/NavigationContext';
 import { useToast } from '../../context/ToastContext';
 import DataTable from '../../components/ui/DataTable';
@@ -10,8 +12,21 @@ import SearchInput from '../../components/ui/SearchInput';
 import PageBanner from '../../components/ui/PageBanner';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import EnrollmentWizard from './EnrollmentWizard';
-import { getInitials, getAvatarColor } from '../../lib/utils';
-import { Video, RotateCcw, Plus, Play, CheckCircle2, AlertCircle, Sparkles, Trash2 } from 'lucide-react';
+import { getInitials, getAvatarColor, cn } from '../../lib/utils';
+import {
+  Video,
+  RotateCcw,
+  Plus,
+  CheckCircle2,
+  AlertCircle,
+  Sparkles,
+  Trash2,
+  Activity,
+  ScanFace,
+  Clock,
+  Building2,
+  Layers,
+} from 'lucide-react';
 
 export function EnrollmentsListPage() {
   const queryClient = useQueryClient();
@@ -22,6 +37,9 @@ export function EnrollmentsListPage() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
+  const [selectedDepartment, setSelectedDepartment] = useState('');
+  const [selectedShift, setSelectedShift] = useState('');
+  const [sortBy, setSortBy] = useState('newest');
   const [deleteTarget, setDeleteTarget] = useState(null);
 
   // 1. Fetch Enrollments
@@ -41,11 +59,40 @@ export function EnrollmentsListPage() {
     queryFn: employeesApi.getAll,
   });
 
+  // 3. Fetch Departments
+  const { data: departments = [] } = useQuery({
+    queryKey: ['departments'],
+    queryFn: departmentsApi.getAll,
+  });
+
+  // 4. Fetch Shifts
+  const { data: shifts = [] } = useQuery({
+    queryKey: ['shifts'],
+    queryFn: shiftsApi.getAll,
+  });
+
   const employeeMap = useMemo(() => {
     const map = new Map();
     employees.forEach((e) => map.set(e.id, e));
     return map;
   }, [employees]);
+
+  // Metric Counts for 4 Toggles
+  const totalEnrollmentsCount = enrollments.length;
+  const completedCount = useMemo(
+    () => enrollments.filter((e) => e.status === 'COMPLETED').length,
+    [enrollments]
+  );
+  const processingCount = useMemo(
+    () => enrollments.filter((e) => ['PROCESSING', 'PENDING'].includes(e.status)).length,
+    [enrollments]
+  );
+  const failedCount = useMemo(
+    () => enrollments.filter((e) => e.status === 'FAILED').length,
+    [enrollments]
+  );
+  const completedPercentage =
+    totalEnrollmentsCount > 0 ? Math.round((completedCount / totalEnrollmentsCount) * 100) : 0;
 
   // Retry Mutation
   const retryMutation = useMutation({
@@ -77,25 +124,71 @@ export function EnrollmentsListPage() {
     },
   });
 
-  // Filtered List
+  // Filtered & Sorted List
   const filteredEnrollments = useMemo(() => {
-    return enrollments.filter((item) => {
-      const emp = employeeMap.get(item.employee_id);
-      if (searchQuery) {
-        const q = searchQuery.toLowerCase();
-        const empName = emp ? `${emp.first_name} ${emp.last_name || ''}`.toLowerCase() : '';
-        const code = (emp?.employee_code || '').toLowerCase();
-        const idStr = item.id.toLowerCase();
-        if (!empName.includes(q) && !code.includes(q) && !idStr.includes(q)) {
-          return false;
+    return enrollments
+      .filter((item) => {
+        const emp = employeeMap.get(item.employee_id);
+
+        // Search Query
+        if (searchQuery) {
+          const q = searchQuery.toLowerCase();
+          const empName = emp ? `${emp.first_name} ${emp.last_name || ''}`.toLowerCase() : '';
+          const code = (emp?.employee_code || '').toLowerCase();
+          const idStr = item.id.toLowerCase();
+          if (!empName.includes(q) && !code.includes(q) && !idStr.includes(q)) {
+            return false;
+          }
         }
-      }
-      if (selectedStatus && item.status !== selectedStatus) {
-        return false;
-      }
-      return true;
-    });
-  }, [enrollments, searchQuery, selectedStatus, employeeMap]);
+
+        // Status Filter
+        if (selectedStatus) {
+          if (selectedStatus === 'PROCESSING') {
+            if (!['PROCESSING', 'PENDING'].includes(item.status)) return false;
+          } else if (item.status !== selectedStatus) {
+            return false;
+          }
+        }
+
+        // Department Filter
+        if (selectedDepartment) {
+          if (!emp || emp.department_id !== selectedDepartment) return false;
+        }
+
+        // Shift Filter
+        if (selectedShift) {
+          if (!emp || emp.shift_id !== selectedShift) return false;
+        }
+
+        return true;
+      })
+      .sort((a, b) => {
+        const empA = employeeMap.get(a.employee_id);
+        const empB = employeeMap.get(b.employee_id);
+
+        if (sortBy === 'name') {
+          const nameA = empA ? `${empA.first_name} ${empA.last_name || ''}`.trim() : '';
+          const nameB = empB ? `${empB.first_name} ${empB.last_name || ''}`.trim() : '';
+          return nameA.localeCompare(nameB);
+        }
+        if (sortBy === 'status') {
+          return (a.status || '').localeCompare(b.status || '');
+        }
+        if (sortBy === 'oldest') {
+          return (a.created_at || a.id).localeCompare(b.created_at || b.id);
+        }
+        // Default newest
+        return (b.created_at || b.id).localeCompare(a.created_at || a.id);
+      });
+  }, [
+    enrollments,
+    searchQuery,
+    selectedStatus,
+    selectedDepartment,
+    selectedShift,
+    sortBy,
+    employeeMap,
+  ]);
 
   if (isWizardMode) {
     return <EnrollmentWizard />;
@@ -189,6 +282,10 @@ export function EnrollmentsListPage() {
     ? `${targetEmp.first_name} ${targetEmp.last_name || ''}`.trim()
     : 'this employee';
 
+  const isFiltered = Boolean(
+    searchQuery || selectedStatus || selectedDepartment || selectedShift || sortBy !== 'newest'
+  );
+
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
       {/* Hero Header */}
@@ -197,50 +294,221 @@ export function EnrollmentsListPage() {
         badgeIcon={Sparkles}
         title="Biometric Enrollment Pipeline"
         description="Monitor asynchronous face extraction, embedding generation, and Milvus vector indexing jobs."
-        actions={
-          <button
-            onClick={() => navigate('enrollments', { mode: 'wizard' })}
-            className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-semibold text-indigo-950 bg-white hover:bg-indigo-50 active:bg-indigo-100 rounded-xl shadow-md transition-all cursor-pointer"
-          >
-            <Plus className="w-4 h-4 text-indigo-600" />
-            Enroll Face Biometrics
-          </button>
-        }
       />
 
-      {/* Search & Filter Bar */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-3">
-        <SearchInput
-          value={searchQuery}
-          onChange={setSearchQuery}
-          placeholder="Search by employee name or code..."
-          className="max-w-md"
-        />
-
-        <div className="flex items-center gap-2">
-          <select
-            value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value)}
-            className="px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-          >
-            <option value="">All Status</option>
-            <option value="COMPLETED">Completed</option>
-            <option value="PROCESSING">Processing</option>
-            <option value="PENDING">Pending</option>
-            <option value="FAILED">Failed</option>
-          </select>
-
-          {(searchQuery || selectedStatus) && (
-            <button
-              onClick={() => {
-                setSearchQuery('');
-                setSelectedStatus('');
-              }}
-              className="px-3 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
-            >
-              Clear
-            </button>
+      {/* Real-Time Blue Theme Metric Toggles (4 Cards) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* 1. Total Enrollments Toggle */}
+        <button
+          type="button"
+          onClick={() => {
+            setSelectedStatus('');
+            setSelectedDepartment('');
+            setSelectedShift('');
+            setSearchQuery('');
+          }}
+          className={cn(
+            'flex items-center justify-between p-4 sm:p-5 rounded-2xl border text-left transition-all duration-200 cursor-pointer shadow-xs hover:shadow-md group min-h-[82px]',
+            !selectedStatus && !selectedDepartment && !selectedShift && !searchQuery
+              ? 'bg-gradient-to-br from-blue-50/90 via-indigo-50/70 to-blue-50/50 border-blue-500/60 ring-2 ring-blue-500/20'
+              : 'bg-white border-slate-200/80 hover:border-blue-300 hover:bg-blue-50/30'
           )}
+        >
+          <div className="min-w-0 pr-3">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block truncate">
+              Total Enrollments
+            </span>
+            <div className="flex items-baseline gap-2 mt-1">
+              <span className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 leading-none">
+                {totalEnrollmentsCount}
+              </span>
+              <span className="text-xs text-blue-600 font-medium truncate">All Queued Jobs</span>
+            </div>
+          </div>
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-blue-100/70 border border-blue-200/60 text-blue-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
+            <Video className="w-5 h-5" />
+          </div>
+        </button>
+
+        {/* 2. Completed / Enrolled Toggle */}
+        <button
+          type="button"
+          onClick={() => setSelectedStatus(selectedStatus === 'COMPLETED' ? '' : 'COMPLETED')}
+          className={cn(
+            'flex items-center justify-between p-4 sm:p-5 rounded-2xl border text-left transition-all duration-200 cursor-pointer shadow-xs hover:shadow-md group min-h-[82px]',
+            selectedStatus === 'COMPLETED'
+              ? 'bg-gradient-to-br from-blue-50/90 via-indigo-50/70 to-blue-50/50 border-blue-500/60 ring-2 ring-blue-500/20'
+              : 'bg-white border-slate-200/80 hover:border-blue-300 hover:bg-blue-50/30'
+          )}
+        >
+          <div className="min-w-0 pr-3">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block truncate">
+              Vectors Enrolled
+            </span>
+            <div className="flex items-baseline gap-2 mt-1">
+              <span className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 leading-none">
+                {completedCount}
+              </span>
+              <span className="text-xs text-blue-600 font-medium truncate">
+                {completedPercentage}% Ready
+              </span>
+            </div>
+          </div>
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-blue-100/70 border border-blue-200/60 text-blue-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
+            <CheckCircle2 className="w-5 h-5" />
+          </div>
+        </button>
+
+        {/* 3. In Progress / Queue Toggle */}
+        <button
+          type="button"
+          onClick={() => setSelectedStatus(selectedStatus === 'PROCESSING' ? '' : 'PROCESSING')}
+          className={cn(
+            'flex items-center justify-between p-4 sm:p-5 rounded-2xl border text-left transition-all duration-200 cursor-pointer shadow-xs hover:shadow-md group min-h-[82px]',
+            selectedStatus === 'PROCESSING'
+              ? 'bg-gradient-to-br from-blue-50/90 via-indigo-50/70 to-blue-50/50 border-blue-500/60 ring-2 ring-blue-500/20'
+              : 'bg-white border-slate-200/80 hover:border-blue-300 hover:bg-blue-50/30'
+          )}
+        >
+          <div className="min-w-0 pr-3">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block truncate">
+              Processing Jobs
+            </span>
+            <div className="flex items-baseline gap-2 mt-1">
+              <span className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 leading-none">
+                {processingCount}
+              </span>
+              <span className="text-xs text-blue-600 font-medium truncate">
+                {processingCount > 0 ? 'AI Processing' : 'Queue Idle'}
+              </span>
+            </div>
+          </div>
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-blue-100/70 border border-blue-200/60 text-blue-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
+            <Activity className={cn('w-5 h-5', processingCount > 0 && 'animate-spin')} />
+          </div>
+        </button>
+
+        {/* 4. Failed Jobs Toggle */}
+        <button
+          type="button"
+          onClick={() => setSelectedStatus(selectedStatus === 'FAILED' ? '' : 'FAILED')}
+          className={cn(
+            'flex items-center justify-between p-4 sm:p-5 rounded-2xl border text-left transition-all duration-200 cursor-pointer shadow-xs hover:shadow-md group min-h-[82px]',
+            selectedStatus === 'FAILED'
+              ? 'bg-gradient-to-br from-blue-50/90 via-indigo-50/70 to-blue-50/50 border-blue-500/60 ring-2 ring-blue-500/20'
+              : 'bg-white border-slate-200/80 hover:border-blue-300 hover:bg-blue-50/30'
+          )}
+        >
+          <div className="min-w-0 pr-3">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block truncate">
+              Failed Jobs
+            </span>
+            <div className="flex items-baseline gap-2 mt-1">
+              <span className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 leading-none">
+                {failedCount}
+              </span>
+              <span className="text-xs text-blue-600 font-medium truncate">
+                {failedCount > 0 ? `${failedCount} Need Retry` : '0 Errors'}
+              </span>
+            </div>
+          </div>
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-blue-100/70 border border-blue-200/60 text-blue-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
+            <AlertCircle className="w-5 h-5" />
+          </div>
+        </button>
+      </div>
+
+      {/* Filter & Search Bar with Enroll Face Biometrics Action */}
+      <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
+        <div className="flex flex-col xl:flex-row xl:items-center gap-3 justify-between">
+          <div className="flex flex-1 flex-col md:flex-row md:items-center gap-3">
+            <SearchInput
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Search by employee name, code, or job ID..."
+              className="w-full md:max-w-xs"
+            />
+
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Status Filter */}
+              <select
+                value={selectedStatus}
+                onChange={(e) => setSelectedStatus(e.target.value)}
+                className="px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              >
+                <option value="">All Statuses</option>
+                <option value="COMPLETED">Completed</option>
+                <option value="PROCESSING">Processing / Pending</option>
+                <option value="FAILED">Failed</option>
+              </select>
+
+              {/* Department Filter */}
+              <select
+                value={selectedDepartment}
+                onChange={(e) => setSelectedDepartment(e.target.value)}
+                className="px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              >
+                <option value="">All Departments</option>
+                {departments.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.department_name}
+                  </option>
+                ))}
+              </select>
+
+              {/* Shift Filter */}
+              <select
+                value={selectedShift}
+                onChange={(e) => setSelectedShift(e.target.value)}
+                className="px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              >
+                <option value="">All Shifts</option>
+                {shifts.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.shift_name}
+                  </option>
+                ))}
+              </select>
+
+              {/* Sort Filter */}
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              >
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="name">Employee Name (A-Z)</option>
+                <option value="status">Pipeline Status</option>
+              </select>
+
+              {isFiltered && (
+                <button
+                  onClick={() => {
+                    setSearchQuery('');
+                    setSelectedStatus('');
+                    setSelectedDepartment('');
+                    setSelectedShift('');
+                    setSortBy('newest');
+                  }}
+                  className="px-3 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+                >
+                  Clear Filters
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Relocated Primary Action Button */}
+          <div className="flex items-center justify-end pt-2 xl:pt-0 border-t xl:border-t-0 border-slate-100">
+            <button
+              onClick={() => navigate('enrollments', { mode: 'wizard' })}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-xl shadow-xs hover:shadow transition-all cursor-pointer shrink-0"
+            >
+              <Plus className="w-4 h-4 text-white" />
+              Enroll Face Biometrics
+            </button>
+          </div>
         </div>
       </div>
 
@@ -250,7 +518,7 @@ export function EnrollmentsListPage() {
         data={filteredEnrollments}
         loading={loadingEnrollments}
         emptyTitle="No enrollment jobs found"
-        emptyDescription="No biometric video processing jobs have been queued."
+        emptyDescription="No biometric video processing jobs match the selected filter criteria."
         emptyActionLabel="Enroll Face Biometrics"
         onEmptyAction={() => navigate('enrollments', { mode: 'wizard' })}
       />
