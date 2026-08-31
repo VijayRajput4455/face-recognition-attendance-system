@@ -1,10 +1,13 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { employeesApi } from '../../api/employees';
+import { departmentsApi } from '../../api/departments';
+import { designationsApi } from '../../api/designations';
 import { enrollmentsApi } from '../../api/enrollments';
 import { useNavigation } from '../../context/NavigationContext';
 import { useToast } from '../../context/ToastContext';
-import { getInitials, getAvatarColor } from '../../lib/utils';
+import PageBanner from '../../components/ui/PageBanner';
+import { getInitials, getAvatarColor, cn } from '../../lib/utils';
 import {
   Video,
   Upload,
@@ -28,6 +31,14 @@ import {
   Trash2,
   Plus,
   X,
+  Building2,
+  Briefcase,
+  ScanFace,
+  UserCheck,
+  UserX,
+  Layers,
+  HelpCircle,
+  Eye,
 } from 'lucide-react';
 
 export function EnrollmentWizard() {
@@ -41,6 +52,8 @@ export function EnrollmentWizard() {
   const [currentStep, setCurrentStep] = useState(preselectedEmployeeId ? 'capture' : 'select');
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [employeeSearch, setEmployeeSearch] = useState('');
+  const [selectedDeptFilter, setSelectedDeptFilter] = useState('');
+  const [enrollmentStatusFilter, setEnrollmentStatusFilter] = useState('all'); // 'all' | 'pending' | 'enrolled'
 
   // Capture mode: 'images' | 'file' | 'webcam'
   const [captureMode, setCaptureMode] = useState('images');
@@ -66,11 +79,52 @@ export function EnrollmentWizard() {
   const [enrollmentStatus, setEnrollmentStatus] = useState(null); // 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED'
   const [errorMessage, setErrorMessage] = useState(null);
 
-  // Fetch employees for step 1
+  // 1. Fetch Employees
   const { data: employees = [], isLoading: loadingEmployees } = useQuery({
     queryKey: ['employees'],
     queryFn: employeesApi.getAll,
   });
+
+  // 2. Fetch Departments
+  const { data: departments = [] } = useQuery({
+    queryKey: ['departments'],
+    queryFn: departmentsApi.getAll,
+  });
+
+  // 3. Fetch Designations
+  const { data: designations = [] } = useQuery({
+    queryKey: ['designations'],
+    queryFn: designationsApi.getAll,
+  });
+
+  // 4. Fetch Enrollments to know current status
+  const { data: enrollments = [] } = useQuery({
+    queryKey: ['enrollments'],
+    queryFn: enrollmentsApi.getAll,
+  });
+
+  const departmentMap = useMemo(() => {
+    const map = new Map();
+    departments.forEach((d) => map.set(d.id, d.department_name));
+    return map;
+  }, [departments]);
+
+  const designationMap = useMemo(() => {
+    const map = new Map();
+    designations.forEach((d) => map.set(d.id, d.designation_name));
+    return map;
+  }, [designations]);
+
+  const enrollmentMap = useMemo(() => {
+    const map = new Map();
+    enrollments.forEach((e) => {
+      const existing = map.get(e.employee_id);
+      if (!existing || existing.status !== 'COMPLETED') {
+        map.set(e.employee_id, e);
+      }
+    });
+    return map;
+  }, [enrollments]);
 
   // Prepopulate selected employee if passed in params
   useEffect(() => {
@@ -104,7 +158,7 @@ export function EnrollmentWizard() {
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
       }
-    } catch (err) {
+    } catch {
       toastError('Camera Error', 'Could not access webcam. Please check browser permissions.');
     }
   };
@@ -299,7 +353,7 @@ export function EnrollmentWizard() {
             setErrorMessage('Processing timed out. The worker may be busy.');
             setCurrentStep('result');
           }
-        } catch (err) {
+        } catch {
           if (attempts > 15) {
             if (pollInterval) clearInterval(pollInterval);
             setEnrollmentStatus('FAILED');
@@ -320,56 +374,108 @@ export function EnrollmentWizard() {
   }, [currentStep, enrollmentId, selectedEmployee, queryClient, success]);
 
   // Filter employees for step 1
-  const filteredEmployees = employees.filter((e) => {
-    const q = employeeSearch.toLowerCase();
-    return (
-      `${e.first_name} ${e.last_name || ''}`.toLowerCase().includes(q) ||
-      (e.employee_code || '').toLowerCase().includes(q)
-    );
-  });
+  const filteredEmployees = useMemo(() => {
+    return employees.filter((e) => {
+      // Text search
+      if (employeeSearch) {
+        const q = employeeSearch.toLowerCase();
+        const nameMatch = `${e.first_name} ${e.last_name || ''}`.toLowerCase().includes(q);
+        const codeMatch = (e.employee_code || '').toLowerCase().includes(q);
+        const emailMatch = (e.email || '').toLowerCase().includes(q);
+        if (!nameMatch && !codeMatch && !emailMatch) return false;
+      }
+
+      // Department filter
+      if (selectedDeptFilter && e.department_id !== selectedDeptFilter) {
+        return false;
+      }
+
+      // Enrollment status filter
+      if (enrollmentStatusFilter !== 'all') {
+        const enrollment = enrollmentMap.get(e.id);
+        const isEnrolled = enrollment && enrollment.status === 'COMPLETED';
+        if (enrollmentStatusFilter === 'enrolled' && !isEnrolled) return false;
+        if (enrollmentStatusFilter === 'pending' && isEnrolled) return false;
+      }
+
+      return true;
+    });
+  }, [employees, employeeSearch, selectedDeptFilter, enrollmentStatusFilter, enrollmentMap]);
 
   const canProceedToEnroll =
     captureMode === 'images' ? imageFiles.length > 0 : Boolean(videoFile);
 
-  return (
-    <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in duration-200">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <button
-            onClick={() => navigate('enrollments')}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 mb-1 transition-colors cursor-pointer"
-          >
-            <ArrowLeft className="w-4 h-4" /> Back to Pipeline
-          </button>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Face Biometric Enrollment</h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Upload face images or capture video to generate 512-D InsightFace embeddings and index into Milvus.
-          </p>
-        </div>
+  const stepsList = [
+    { key: 'select', num: 1, title: 'Select Employee', desc: 'Pick staff member' },
+    { key: 'capture', num: 2, title: 'Face Media Source', desc: 'Photos or webcam' },
+    { key: 'processing', num: 3, title: 'AI Processing', desc: '512-D vector extraction' },
+    { key: 'result', num: 4, title: 'Verification Result', desc: 'Milvus indexing status' },
+  ];
 
-        {/* Wizard Step Indicators */}
-        <div className="hidden sm:flex items-center gap-2">
-          {['Employee', 'Face Media Source', 'AI Processing', 'Result'].map((stepName, idx) => {
-            const stepKeys = ['select', 'capture', 'processing', 'result'];
-            const stepIdx = stepKeys.indexOf(currentStep);
-            const isCompleted = stepIdx > idx;
-            const isCurrent = stepIdx === idx;
+  const stepKeys = ['select', 'capture', 'processing', 'result'];
+  const currentStepIdx = stepKeys.indexOf(currentStep);
+
+  return (
+    <div className="max-w-5xl mx-auto space-y-6 animate-in fade-in duration-200">
+      {/* Top Banner with Back Button */}
+      <div className="space-y-3">
+        <button
+          type="button"
+          onClick={() => navigate('enrollments')}
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-indigo-600 transition-colors cursor-pointer"
+        >
+          <ArrowLeft className="w-4 h-4" /> Back to Enrollments Pipeline
+        </button>
+
+        <PageBanner
+          badge="Biometric AI Registration"
+          badgeIcon={ScanFace}
+          title="Face Biometric Enrollment Studio"
+          description="Register and index 512-D InsightFace facial vector galleries in Milvus for high-accuracy workforce recognition."
+        />
+      </div>
+
+      {/* Modern 4-Step Stepper Progress Card */}
+      <div className="bg-white rounded-3xl border border-slate-200/80 p-5 sm:p-6 shadow-xs">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 relative">
+          {stepsList.map((st, idx) => {
+            const isCompleted = currentStepIdx > idx;
+            const isCurrent = currentStepIdx === idx;
 
             return (
-              <div key={stepName} className="flex items-center gap-2">
-                {idx > 0 && <div className="w-6 h-0.5 bg-slate-200" />}
+              <div
+                key={st.key}
+                className={cn(
+                  'flex items-center gap-3 p-3 rounded-2xl border transition-all duration-200',
+                  isCurrent
+                    ? 'bg-gradient-to-br from-indigo-50/90 to-blue-50/50 border-indigo-300 ring-2 ring-indigo-500/20'
+                    : isCompleted
+                    ? 'bg-emerald-50/50 border-emerald-200/80'
+                    : 'bg-slate-50/50 border-slate-200/60 opacity-60'
+                )}
+              >
                 <div
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
+                  className={cn(
+                    'w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs transition-all',
                     isCurrent
-                      ? 'bg-indigo-600 text-white'
+                      ? 'bg-indigo-600 text-white shadow-indigo-600/30'
                       : isCompleted
-                      ? 'bg-emerald-100 text-emerald-800'
-                      : 'bg-slate-100 text-slate-400'
-                  }`}
+                      ? 'bg-emerald-500 text-white'
+                      : 'bg-white text-slate-400 border border-slate-200'
+                  )}
                 >
-                  <span>{idx + 1}</span>
-                  <span className="hidden md:inline">{stepName}</span>
+                  {isCompleted ? <CheckCircle2 className="w-4 h-4" /> : st.num}
+                </div>
+                <div className="min-w-0">
+                  <span
+                    className={cn(
+                      'text-xs font-bold block truncate',
+                      isCurrent ? 'text-indigo-950' : isCompleted ? 'text-emerald-950' : 'text-slate-700'
+                    )}
+                  >
+                    {st.title}
+                  </span>
+                  <span className="text-[10px] text-slate-400 block truncate">{st.desc}</span>
                 </div>
               </div>
             );
@@ -380,72 +486,169 @@ export function EnrollmentWizard() {
       {/* STEP 1: Select Employee */}
       {currentStep === 'select' && (
         <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-xs space-y-6">
-          <div>
-            <h3 className="text-base font-bold text-slate-900">Step 1: Select Employee for Biometric Registration</h3>
-            <p className="text-xs text-slate-500 mt-0.5">Choose an employee from your workforce roster</p>
-          </div>
-
-          <div className="relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3 pointer-events-none" />
-            <input
-              type="text"
-              value={employeeSearch}
-              onChange={(e) => setEmployeeSearch(e.target.value)}
-              placeholder="Search by employee name or code..."
-              className="w-full pl-10 pr-4 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-            />
-          </div>
-
-          <div className="max-h-80 overflow-y-auto divide-y divide-slate-100 border border-slate-200 rounded-2xl">
-            {loadingEmployees ? (
-              <div className="p-8 text-center text-slate-400 text-xs">Loading employee roster...</div>
-            ) : filteredEmployees.length === 0 ? (
-              <div className="p-8 text-center text-slate-400 text-xs">No employees found matching search.</div>
-            ) : (
-              filteredEmployees.map((emp) => {
-                const fullName = `${emp.first_name} ${emp.last_name || ''}`.trim();
-                const initials = getInitials(emp.first_name, emp.last_name);
-                const isSelected = selectedEmployee?.id === emp.id;
-
-                return (
-                  <div
-                    key={emp.id}
-                    onClick={() => setSelectedEmployee(emp)}
-                    className={`p-3.5 flex items-center justify-between cursor-pointer transition-colors ${
-                      isSelected ? 'bg-indigo-50/80 border-l-4 border-indigo-600' : 'hover:bg-slate-50'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center font-bold text-xs text-slate-700">
-                        {initials}
-                      </div>
-                      <div>
-                        <div className="font-semibold text-slate-900 text-xs">{fullName}</div>
-                        <div className="text-[11px] text-slate-400 font-mono">{emp.employee_code}</div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs text-slate-500">{emp.email || 'No email'}</span>
-                      <div
-                        className={`w-5 h-5 rounded-full border flex items-center justify-center ${
-                          isSelected ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-slate-300'
-                        }`}
-                      >
-                        {isSelected && <CheckCircle2 className="w-3.5 h-3.5" />}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-100">
+            <div>
+              <h3 className="text-base font-bold text-slate-900">
+                Step 1: Choose Employee for Biometric Registration
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Select an employee from your workforce directory to generate and store face vectors
+              </p>
+            </div>
+            {selectedEmployee && (
+              <span className="text-xs font-semibold px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200/80 self-start sm:self-auto">
+                Selected: {selectedEmployee.first_name} {selectedEmployee.last_name || ''}
+              </span>
             )}
           </div>
 
-          <div className="flex justify-end pt-2">
+          {/* Search and Filters Bar */}
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+            <div className="sm:col-span-6 relative">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3 pointer-events-none" />
+              <input
+                type="text"
+                value={employeeSearch}
+                onChange={(e) => setEmployeeSearch(e.target.value)}
+                placeholder="Search by name, employee code, or email..."
+                className="w-full pl-10 pr-4 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              />
+            </div>
+
+            <div className="sm:col-span-3">
+              <select
+                value={selectedDeptFilter}
+                onChange={(e) => setSelectedDeptFilter(e.target.value)}
+                className="w-full px-3 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              >
+                <option value="">All Departments</option>
+                {departments.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.department_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="sm:col-span-3">
+              <select
+                value={enrollmentStatusFilter}
+                onChange={(e) => setEnrollmentStatusFilter(e.target.value)}
+                className="w-full px-3 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              >
+                <option value="all">All Status</option>
+                <option value="pending">Not Enrolled (Pending)</option>
+                <option value="enrolled">Already Enrolled</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Employee Selection Cards Grid */}
+          <div className="max-h-96 overflow-y-auto pr-1">
+            {loadingEmployees ? (
+              <div className="py-16 text-center space-y-2">
+                <Loader2 className="w-7 h-7 text-indigo-600 animate-spin mx-auto" />
+                <p className="text-xs text-slate-400">Loading employee directory...</p>
+              </div>
+            ) : filteredEmployees.length === 0 ? (
+              <div className="py-16 text-center bg-slate-50/60 rounded-2xl border border-dashed border-slate-200">
+                <User className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                <h4 className="text-xs font-bold text-slate-700">No matching employees found</h4>
+                <p className="text-xs text-slate-400 mt-0.5">Try clearing your search query or department filter.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {filteredEmployees.map((emp) => {
+                  const fullName = `${emp.first_name} ${emp.last_name || ''}`.trim();
+                  const initials = getInitials(emp.first_name, emp.last_name);
+                  const avatarColor = getAvatarColor(fullName);
+                  const isSelected = selectedEmployee?.id === emp.id;
+                  const deptName = emp.department_id ? departmentMap.get(emp.department_id) : 'Unassigned';
+                  const desigName = emp.designation_id ? designationMap.get(emp.designation_id) : 'Staff';
+                  const enrollment = enrollmentMap.get(emp.id);
+                  const isEnrolled = enrollment && enrollment.status === 'COMPLETED';
+
+                  return (
+                    <div
+                      key={emp.id}
+                      onClick={() => setSelectedEmployee(emp)}
+                      className={cn(
+                        'p-4 rounded-2xl border transition-all duration-150 cursor-pointer flex items-center justify-between gap-3 shadow-2xs',
+                        isSelected
+                          ? 'bg-gradient-to-br from-indigo-50 via-white to-blue-50/40 border-indigo-500 ring-2 ring-indigo-500/20 shadow-xs'
+                          : 'bg-white border-slate-200/80 hover:border-indigo-300 hover:bg-slate-50/50'
+                      )}
+                    >
+                      <div className="flex items-center gap-3.5 min-w-0">
+                        <div
+                          className={`w-11 h-11 rounded-2xl border flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs ${avatarColor}`}
+                        >
+                          {initials}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-bold text-slate-900 text-xs truncate">{fullName}</h4>
+                            <span className="font-mono text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-700 shrink-0">
+                              {emp.employee_code}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-[11px] text-slate-500 mt-1 truncate">
+                            <span className="truncate">{deptName}</span>
+                            <span>•</span>
+                            <span className="text-amber-700 font-medium truncate">{desigName}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2.5 shrink-0">
+                        {isEnrolled ? (
+                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full hidden sm:inline">
+                            Enrolled
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full hidden sm:inline">
+                            Pending
+                          </span>
+                        )}
+
+                        <div
+                          className={cn(
+                            'w-6 h-6 rounded-full border flex items-center justify-center transition-all',
+                            isSelected
+                              ? 'border-indigo-600 bg-indigo-600 text-white shadow-xs'
+                              : 'border-slate-300 bg-white'
+                          )}
+                        >
+                          {isSelected && <CheckCircle2 className="w-4 h-4" />}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Step 1 Footer Action */}
+          <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+            <span className="text-xs text-slate-400">
+              {selectedEmployee ? (
+                <span>
+                  Ready to proceed with{' '}
+                  <strong className="text-slate-800">
+                    {selectedEmployee.first_name} {selectedEmployee.last_name || ''}
+                  </strong>
+                </span>
+              ) : (
+                'Select an employee card above to continue'
+              )}
+            </span>
+
             <button
+              type="button"
               onClick={() => setCurrentStep('capture')}
               disabled={!selectedEmployee}
-              className="inline-flex items-center gap-2 px-5 py-2.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-xs transition-all cursor-pointer"
+              className="inline-flex items-center gap-2 px-6 py-2.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-xs transition-all cursor-pointer"
             >
               Continue to Face Media <ArrowRight className="w-4 h-4" />
             </button>
@@ -456,18 +659,19 @@ export function EnrollmentWizard() {
       {/* STEP 2: Media Source & Capture */}
       {currentStep === 'capture' && (
         <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-xs space-y-6">
+          {/* Header & Mode Switcher */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
             <div>
               <h3 className="text-base font-bold text-slate-900">Step 2: Provide Face Photos or Video</h3>
               <p className="text-xs text-slate-500 mt-0.5">
                 Enrolling biometrics for{' '}
                 <strong className="text-slate-900">
-                  {selectedEmployee?.first_name} {selectedEmployee?.last_name} ({selectedEmployee?.employee_code})
+                  {selectedEmployee?.first_name} {selectedEmployee?.last_name || ''} ({selectedEmployee?.employee_code})
                 </strong>
               </p>
             </div>
 
-            {/* Switch Mode Tabs (Images / Video Upload / Live Camera) */}
+            {/* Switch Mode Tabs */}
             <div className="flex bg-slate-100 p-1 rounded-xl self-start sm:self-auto">
               <button
                 type="button"
@@ -475,11 +679,12 @@ export function EnrollmentWizard() {
                   stopWebcam();
                   setCaptureMode('images');
                 }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                className={cn(
+                  'flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer',
                   captureMode === 'images'
                     ? 'bg-white text-indigo-700 shadow-2xs'
                     : 'text-slate-600 hover:text-slate-900'
-                }`}
+                )}
               >
                 <ImageIcon className="w-3.5 h-3.5" />
                 Upload Photos
@@ -490,11 +695,12 @@ export function EnrollmentWizard() {
                   stopWebcam();
                   setCaptureMode('file');
                 }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                className={cn(
+                  'flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer',
                   captureMode === 'file'
                     ? 'bg-white text-indigo-700 shadow-2xs'
                     : 'text-slate-600 hover:text-slate-900'
-                }`}
+                )}
               >
                 <Video className="w-3.5 h-3.5" />
                 Upload Video
@@ -505,11 +711,12 @@ export function EnrollmentWizard() {
                   setCaptureMode('webcam');
                   startWebcam();
                 }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                className={cn(
+                  'flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer',
                   captureMode === 'webcam'
                     ? 'bg-white text-indigo-700 shadow-2xs'
                     : 'text-slate-600 hover:text-slate-900'
-                }`}
+                )}
               >
                 <Camera className="w-3.5 h-3.5" />
                 Live Camera
@@ -519,26 +726,33 @@ export function EnrollmentWizard() {
 
           {/* Mode 1: Multiple Images Upload */}
           {captureMode === 'images' && (
-            <div className="space-y-4">
+            <div className="space-y-5">
+              {/* Dropzone */}
               <div
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={handleImagesSelect}
-                className="border-2 border-dashed border-indigo-200 hover:border-indigo-400 bg-indigo-50/20 hover:bg-indigo-50/40 rounded-2xl p-6 sm:p-8 text-center transition-all flex flex-col items-center justify-center space-y-3"
+                className="border-2 border-dashed border-slate-200 hover:border-indigo-400 bg-slate-50/60 hover:bg-indigo-50/20 rounded-3xl p-8 sm:p-10 text-center transition-all flex flex-col items-center justify-center space-y-4"
               >
-                <div className="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center shadow-2xs">
-                  <Images className="w-6 h-6" />
+                <div className="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shadow-2xs border border-indigo-100">
+                  <Images className="w-7 h-7 stroke-[1.8]" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-semibold text-slate-900">
+                  <h4 className="text-sm font-bold text-slate-900">
                     Upload Employee Face Photos (Single or Multiple)
                   </h4>
-                  <p className="text-xs text-slate-500 mt-1 max-w-md">
-                    Drag and drop 1 to 10 photos of the employee. Multiple angles and natural lighting ensure higher recognition accuracy.
+                  <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto leading-relaxed">
+                    Drag and drop 1 to 10 photos of the employee. Different angles, lighting, and expressions enhance the Milvus multi-vector gallery.
                   </p>
                 </div>
 
-                <label className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-2xs cursor-pointer transition-all">
-                  <Upload className="w-3.5 h-3.5" />
+                <div className="flex flex-wrap items-center justify-center gap-2 pt-1 text-[11px] text-slate-500">
+                  <span className="bg-white border border-slate-200 px-2.5 py-1 rounded-lg">Frontal Face</span>
+                  <span className="bg-white border border-slate-200 px-2.5 py-1 rounded-lg">Slight Angles</span>
+                  <span className="bg-white border border-slate-200 px-2.5 py-1 rounded-lg">JPG, PNG, WebP</span>
+                </div>
+
+                <label className="inline-flex items-center gap-1.5 px-5 py-2.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs cursor-pointer transition-all">
+                  <Upload className="w-4 h-4" />
                   Select Photo Files
                   <input
                     type="file"
@@ -552,18 +766,18 @@ export function EnrollmentWizard() {
 
               {/* Photo Previews Grid */}
               {imagePreviews.length > 0 && (
-                <div className="space-y-3">
+                <div className="space-y-3 pt-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-bold text-slate-900 uppercase tracking-wider">
                         Selected Photos ({imagePreviews.length})
                       </span>
-                      <span className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">
-                        {imagePreviews.length >= 3 ? 'Optimal Quality' : '1+ Ready'}
+                      <span className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-100">
+                        {imagePreviews.length >= 3 ? 'Optimal Gallery Quality' : 'Ready to Enroll'}
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
                       <label className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 cursor-pointer flex items-center gap-1">
                         <Plus className="w-3.5 h-3.5" /> Add More
                         <input
@@ -577,7 +791,7 @@ export function EnrollmentWizard() {
                       <button
                         type="button"
                         onClick={handleClearAllImages}
-                        className="text-xs text-rose-600 hover:text-rose-700 font-medium cursor-pointer ml-2"
+                        className="text-xs text-rose-600 hover:text-rose-700 font-semibold cursor-pointer"
                       >
                         Clear All
                       </button>
@@ -588,25 +802,25 @@ export function EnrollmentWizard() {
                     {imagePreviews.map((img, idx) => (
                       <div
                         key={idx}
-                        className="relative group rounded-xl overflow-hidden border border-slate-200 bg-slate-100 aspect-square shadow-2xs"
+                        className="relative group rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 aspect-square shadow-2xs"
                       >
                         <img
                           src={img.url}
                           alt={`Face ${idx + 1}`}
                           className="w-full h-full object-cover"
                         />
-                        <div className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-md bg-slate-900/70 text-white text-[10px] font-bold backdrop-blur-xs">
+                        <div className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-slate-900/80 text-white text-[10px] font-mono font-bold backdrop-blur-xs">
                           #{idx + 1}
                         </div>
                         <button
                           type="button"
                           onClick={() => handleRemoveImage(idx)}
-                          className="absolute top-1.5 right-1.5 p-1 rounded-md bg-rose-600 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-rose-700 cursor-pointer shadow-xs"
+                          className="absolute top-2 right-2 p-1.5 rounded-lg bg-rose-600 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-rose-700 cursor-pointer shadow-xs"
                           title="Remove photo"
                         >
-                          <X className="w-3 h-3" />
+                          <X className="w-3.5 h-3.5" />
                         </button>
-                        <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-slate-950/80 to-transparent p-1.5 text-[10px] text-white truncate">
+                        <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-slate-950/80 to-transparent p-2 text-[10px] text-white truncate font-medium">
                           {img.name}
                         </div>
                       </div>
@@ -622,27 +836,27 @@ export function EnrollmentWizard() {
             <div
               onDragOver={(e) => e.preventDefault()}
               onDrop={handleFileDrop}
-              className="border-2 border-dashed border-slate-200 hover:border-indigo-400 bg-slate-50/50 rounded-2xl p-8 text-center transition-all flex flex-col items-center justify-center space-y-3"
+              className="border-2 border-dashed border-slate-200 hover:border-indigo-400 bg-slate-50/60 rounded-3xl p-10 text-center transition-all flex flex-col items-center justify-center space-y-4"
             >
-              <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shadow-2xs">
-                <Video className="w-6 h-6" />
+              <div className="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shadow-2xs border border-indigo-100">
+                <Video className="w-7 h-7 stroke-[1.8]" />
               </div>
               <div>
-                <h4 className="text-sm font-semibold text-slate-900">Drag and drop employee video here</h4>
-                <p className="text-xs text-slate-500 mt-1">Accepts MP4, WebM, AVI (typically 3-5 seconds)</p>
+                <h4 className="text-sm font-bold text-slate-900">Drag and drop employee video here</h4>
+                <p className="text-xs text-slate-500 mt-1">Accepts MP4, WebM, AVI (3-5 seconds continuous video)</p>
               </div>
 
-              <label className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-indigo-600 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl shadow-2xs cursor-pointer transition-all">
-                <Upload className="w-3.5 h-3.5" />
-                Browse File
+              <label className="inline-flex items-center gap-1.5 px-5 py-2.5 text-xs font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl shadow-2xs cursor-pointer transition-all">
+                <Upload className="w-4 h-4 text-indigo-600" />
+                Browse Video File
                 <input type="file" accept="video/*" onChange={handleFileDrop} className="hidden" />
               </label>
 
               {videoFile && (
-                <div className="mt-4 p-3 bg-white border border-slate-200 rounded-xl flex items-center gap-3 text-xs w-full max-w-sm text-left">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <div className="mt-4 p-3.5 bg-white border border-slate-200 rounded-2xl flex items-center gap-3 text-xs w-full max-w-sm text-left shadow-2xs">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
                   <div className="truncate flex-1">
-                    <span className="font-semibold text-slate-900 block truncate">{videoFile.name}</span>
+                    <span className="font-bold text-slate-900 block truncate">{videoFile.name}</span>
                     <span className="text-[11px] text-slate-400 font-mono">
                       {(videoFile.size / (1024 * 1024)).toFixed(2)} MB
                     </span>
@@ -672,7 +886,7 @@ export function EnrollmentWizard() {
                   <button
                     type="button"
                     onClick={handleStartRecording}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-xs transition-all cursor-pointer"
+                    className="inline-flex items-center gap-2 px-6 py-2.5 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-xs transition-all cursor-pointer"
                   >
                     <Camera className="w-4 h-4" />
                     Record 5s Face Video
@@ -681,7 +895,7 @@ export function EnrollmentWizard() {
                   <button
                     type="button"
                     onClick={handleStopRecording}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 text-xs font-semibold text-white bg-slate-800 hover:bg-slate-900 rounded-xl transition-all cursor-pointer"
+                    className="inline-flex items-center gap-2 px-6 py-2.5 text-xs font-semibold text-white bg-slate-800 hover:bg-slate-900 rounded-xl transition-all cursor-pointer"
                   >
                     <Square className="w-4 h-4 fill-white" />
                     Stop Recording
@@ -705,10 +919,11 @@ export function EnrollmentWizard() {
                 stopWebcam();
                 setCurrentStep('select');
               }}
-              className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 rounded-xl cursor-pointer"
+              className="px-4 py-2.5 text-xs font-semibold text-slate-600 hover:text-slate-900 rounded-xl cursor-pointer"
             >
-              Back
+              Back to Employee Selection
             </button>
+
             <button
               type="button"
               onClick={() => enrollMutation.mutate()}
@@ -724,14 +939,14 @@ export function EnrollmentWizard() {
 
       {/* STEP 3: AI Processing Pipeline */}
       {currentStep === 'processing' && (
-        <div className="bg-white rounded-3xl border border-slate-200/80 p-8 shadow-xs text-center space-y-8">
-          <div className="max-w-md mx-auto space-y-2">
-            <div className="w-16 h-16 rounded-3xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 mx-auto shadow-sm animate-bounce">
+        <div className="bg-white rounded-3xl border border-slate-200/80 p-8 sm:p-12 shadow-xs text-center space-y-8">
+          <div className="max-w-md mx-auto space-y-3">
+            <div className="w-16 h-16 rounded-3xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 mx-auto shadow-sm animate-pulse">
               <Sparkles className="w-8 h-8 stroke-[1.8]" />
             </div>
-            <h3 className="text-lg font-bold text-slate-900">AI Face Pipeline in Progress</h3>
+            <h3 className="text-xl font-bold text-slate-900">AI Face Pipeline in Progress</h3>
             <p className="text-xs text-slate-500 leading-relaxed">
-              Video is being processed asynchronously by the background enrollment worker and InsightFace AI model.
+              Generating 512-D ArcFace landmarks and indexing the employee multi-vector gallery into Milvus.
             </p>
           </div>
 
@@ -742,8 +957,8 @@ export function EnrollmentWizard() {
                 <Video className="w-5 h-5 text-indigo-600" />
                 <Loader2 className="w-4 h-4 text-indigo-600 animate-spin" />
               </div>
-              <h5 className="text-xs font-bold text-slate-900">1. Frame Extraction</h5>
-              <p className="text-[11px] text-slate-500 leading-tight">Extracting optimal sharp frames with landmarks</p>
+              <h5 className="text-xs font-bold text-slate-900">1. Landmark Quality</h5>
+              <p className="text-[11px] text-slate-500 leading-tight">Extracting sharp frames and bounding boxes</p>
             </div>
 
             <div className="bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100 text-left space-y-2">
@@ -751,8 +966,8 @@ export function EnrollmentWizard() {
                 <Cpu className="w-5 h-5 text-indigo-600" />
                 <Loader2 className="w-4 h-4 text-indigo-600 animate-spin" />
               </div>
-              <h5 className="text-xs font-bold text-slate-900">2. Vector Generation</h5>
-              <p className="text-[11px] text-slate-500 leading-tight">512-D ArcFace embedding normalization</p>
+              <h5 className="text-xs font-bold text-slate-900">2. 512-D Embedding</h5>
+              <p className="text-[11px] text-slate-500 leading-tight">InsightFace vector normalization</p>
             </div>
 
             <div className="bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100 text-left space-y-2">
@@ -760,8 +975,8 @@ export function EnrollmentWizard() {
                 <Database className="w-5 h-5 text-indigo-600" />
                 <Loader2 className="w-4 h-4 text-indigo-600 animate-spin" />
               </div>
-              <h5 className="text-xs font-bold text-slate-900">3. Milvus Indexing</h5>
-              <p className="text-[11px] text-slate-500 leading-tight">HNSW cosine similarity storage</p>
+              <h5 className="text-xs font-bold text-slate-900">3. Milvus Storage</h5>
+              <p className="text-[11px] text-slate-500 leading-tight">HNSW multi-vector gallery indexing</p>
             </div>
           </div>
 
@@ -771,64 +986,111 @@ export function EnrollmentWizard() {
         </div>
       )}
 
-      {/* STEP 4: Result Screen (Success or Failed) */}
+      {/* STEP 4: Result Screen */}
       {currentStep === 'result' && (
-        <div className="bg-white rounded-3xl border border-slate-200/80 p-8 shadow-xs text-center space-y-6">
+        <div className="bg-white rounded-3xl border border-slate-200/80 p-8 sm:p-12 shadow-xs text-center space-y-6">
           {enrollmentStatus === 'COMPLETED' ? (
-            <div className="max-w-md mx-auto space-y-4">
+            <div className="max-w-md mx-auto space-y-5">
               <div className="w-16 h-16 rounded-3xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 mx-auto shadow-sm">
                 <ShieldCheck className="w-8 h-8" />
               </div>
               <div>
                 <h3 className="text-xl font-bold text-slate-900">Biometric Registration Successful</h3>
-                <p className="text-xs text-slate-500 mt-1">
+                <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
                   Facial vectors for{' '}
                   <strong className="text-slate-900">
-                    {selectedEmployee?.first_name} {selectedEmployee?.last_name}
+                    {selectedEmployee?.first_name} {selectedEmployee?.last_name || ''}
                   </strong>{' '}
-                  are now active in Milvus. The employee will now be recognized automatically in attendance streams.
+                  are now active in the Milvus vector gallery. The employee will be recognized automatically in attendance streams.
                 </p>
               </div>
 
-              <div className="flex items-center justify-center gap-3 pt-4">
+              {/* Summary Profile Box */}
+              {selectedEmployee && (
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center gap-3 text-left">
+                  <div
+                    className={`w-10 h-10 rounded-xl border flex items-center justify-center font-bold text-xs shrink-0 ${getAvatarColor(
+                      selectedEmployee.first_name
+                    )}`}
+                  >
+                    {getInitials(selectedEmployee.first_name, selectedEmployee.last_name)}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h5 className="font-bold text-slate-900 text-xs truncate">
+                      {selectedEmployee.first_name} {selectedEmployee.last_name || ''}
+                    </h5>
+                    <span className="font-mono text-[10px] text-slate-500">
+                      {selectedEmployee.employee_code} • {selectedEmployee.email || 'Registered'}
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded-full">
+                    Active
+                  </span>
+                </div>
+              )}
+
+              <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
                 <button
+                  type="button"
                   onClick={() => navigate('recognition')}
-                  className="px-4 py-2.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs transition-all cursor-pointer"
+                  className="px-5 py-2.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs transition-all cursor-pointer"
                 >
-                  Test Recognition Live
+                  Test Face in Studio
                 </button>
                 <button
-                  onClick={() => navigate('employees')}
-                  className="px-4 py-2.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all cursor-pointer"
+                  type="button"
+                  onClick={() =>
+                    navigate('employee-profile', {
+                      employeeId: selectedEmployee.id,
+                      employeeName: `${selectedEmployee.first_name} ${selectedEmployee.last_name || ''}`.trim(),
+                    })
+                  }
+                  className="px-4 py-2.5 text-xs font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl shadow-2xs transition-all cursor-pointer"
                 >
-                  Back to Workforce
+                  View Profile
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedEmployee(null);
+                    handleClearAllImages();
+                    setVideoFile(null);
+                    setCurrentStep('select');
+                  }}
+                  className="px-4 py-2.5 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+                >
+                  Enroll Another
                 </button>
               </div>
             </div>
           ) : (
-            <div className="max-w-md mx-auto space-y-4">
+            <div className="max-w-md mx-auto space-y-5">
               <div className="w-16 h-16 rounded-3xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600 mx-auto shadow-sm">
                 <AlertCircle className="w-8 h-8" />
               </div>
               <div>
                 <h3 className="text-xl font-bold text-slate-900">Enrollment Could Not Complete</h3>
-                <p className="text-xs text-rose-600 mt-1">{errorMessage || 'Face detection could not find a clear face.'}</p>
+                <p className="text-xs text-rose-600 mt-1 leading-relaxed">
+                  {errorMessage || 'Face detection could not find a clear front-facing face.'}
+                </p>
               </div>
 
-              <div className="flex items-center justify-center gap-3 pt-4">
+              <div className="flex items-center justify-center gap-3 pt-2">
                 <button
+                  type="button"
                   onClick={() => retryMutation.mutate()}
                   disabled={retryMutation.isPending}
-                  className="inline-flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs transition-all cursor-pointer disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 px-5 py-2.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs transition-all cursor-pointer disabled:opacity-50"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                   Retry Pipeline
                 </button>
                 <button
+                  type="button"
                   onClick={() => setCurrentStep('capture')}
-                  className="px-4 py-2.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all cursor-pointer"
+                  className="px-4 py-2.5 text-xs font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition-all cursor-pointer"
                 >
-                  Record New Video
+                  Re-upload Media
                 </button>
               </div>
             </div>
