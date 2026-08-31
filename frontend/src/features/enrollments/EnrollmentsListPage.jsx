@@ -8,9 +8,10 @@ import DataTable from '../../components/ui/DataTable';
 import StatusBadge from '../../components/ui/StatusBadge';
 import SearchInput from '../../components/ui/SearchInput';
 import PageBanner from '../../components/ui/PageBanner';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import EnrollmentWizard from './EnrollmentWizard';
 import { getInitials, getAvatarColor } from '../../lib/utils';
-import { Video, RotateCcw, Plus, Play, CheckCircle2, AlertCircle, Sparkles } from 'lucide-react';
+import { Video, RotateCcw, Plus, Play, CheckCircle2, AlertCircle, Sparkles, Trash2 } from 'lucide-react';
 
 export function EnrollmentsListPage() {
   const queryClient = useQueryClient();
@@ -21,6 +22,7 @@ export function EnrollmentsListPage() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   // 1. Fetch Enrollments
   const { data: enrollments = [], isLoading: loadingEnrollments } = useQuery({
@@ -54,6 +56,24 @@ export function EnrollmentsListPage() {
     },
     onError: (err) => {
       toastError('Retry Failed', err.message);
+    },
+  });
+
+  // Delete Enrollment Mutation
+  const deleteMutation = useMutation({
+    mutationFn: (id) => enrollmentsApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['enrollments'] });
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
+      queryClient.invalidateQueries({ queryKey: ['milvus-count'] });
+      success(
+        'Biometric Enrollment Removed',
+        'The face vector embedding has been removed from Milvus DB and the enrollment record deleted.'
+      );
+      setDeleteTarget(null);
+    },
+    onError: (err) => {
+      toastError('Deletion Failed', err.message);
     },
   });
 
@@ -138,7 +158,7 @@ export function EnrollmentsListPage() {
       className: 'text-right',
       cellClassName: 'text-right',
       render: (item) => (
-        <div className="flex items-center justify-end gap-2">
+        <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
           {item.status === 'FAILED' && (
             <button
               onClick={() => retryMutation.mutate(item.id)}
@@ -149,10 +169,25 @@ export function EnrollmentsListPage() {
               Retry
             </button>
           )}
+
+          <button
+            type="button"
+            onClick={() => setDeleteTarget(item)}
+            className="w-8 h-8 rounded-xl border border-slate-200/80 bg-white text-slate-500 hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50/60 shadow-2xs transition-all duration-150 flex items-center justify-center cursor-pointer active:scale-95 group"
+            title="Delete Biometric Vectors & Record"
+            aria-label="Delete Biometric Vectors & Record"
+          >
+            <Trash2 className="w-3.5 h-3.5 transition-transform group-hover:scale-110" />
+          </button>
         </div>
       ),
     },
   ];
+
+  const targetEmp = deleteTarget ? employeeMap.get(deleteTarget.employee_id) : null;
+  const targetEmpName = targetEmp
+    ? `${targetEmp.first_name} ${targetEmp.last_name || ''}`.trim()
+    : 'this employee';
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
@@ -218,6 +253,18 @@ export function EnrollmentsListPage() {
         emptyDescription="No biometric video processing jobs have been queued."
         emptyActionLabel="Enroll Face Biometrics"
         onEmptyAction={() => navigate('enrollments', { mode: 'wizard' })}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={Boolean(deleteTarget)}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => deleteMutation.mutate(deleteTarget?.id)}
+        isLoading={deleteMutation.isPending}
+        danger
+        title="Delete Biometric Embedding & Enrollment?"
+        description={`Are you sure you want to remove face biometric vectors for ${targetEmpName} (${targetEmp?.employee_code || ''})? This will delete the 512-D embedding from Milvus vector database and clear the enrollment record. The employee record itself will NOT be deleted.`}
+        confirmText="Delete Biometrics"
       />
     </div>
   );

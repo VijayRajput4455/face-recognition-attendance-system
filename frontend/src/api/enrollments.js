@@ -17,6 +17,8 @@ export const enrollmentsApi = {
   },
 
   retry: (enrollmentId) => apiClient.post(`/enrollments/${enrollmentId}/retry`),
+  delete: (id) => apiClient.delete(`/enrollments/${id}`),
+  deleteByEmployeeId: (employeeId) => apiClient.delete(`/enrollments/employee/${employeeId}`),
 };
 
 export default enrollmentsApi;

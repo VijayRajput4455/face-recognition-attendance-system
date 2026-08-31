@@ -140,3 +140,51 @@ def retry_enrollment(
     return enrollment_orchestrator.retry(
         enrollment_id=enrollment_id,
     )
+
+
+# ==========================================================
+# Delete Enrollment (and Milvus vector embedding)
+# ==========================================================
+
+@router.delete(
+    "/{enrollment_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_enrollment(
+    enrollment_id: UUID,
+):
+
+    logger.info(
+        "Delete enrollment requested.",
+        extra={
+            "enrollment_id": str(enrollment_id),
+        },
+    )
+
+    enrollment_orchestrator.delete(
+        enrollment_id=enrollment_id,
+    )
+
+
+# ==========================================================
+# Delete All Biometrics For Employee
+# ==========================================================
+
+@router.delete(
+    "/employee/{employee_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_employee_biometrics(
+    employee_id: UUID,
+):
+
+    logger.info(
+        "Delete employee biometrics requested.",
+        extra={
+            "employee_id": str(employee_id),
+        },
+    )
+
+    enrollment_orchestrator.delete_by_employee(
+        employee_id=employee_id,
+    )

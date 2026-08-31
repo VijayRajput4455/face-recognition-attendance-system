@@ -16,6 +16,8 @@ from app.schemas.employee import (
     EmployeeResponse,
 )
 
+from app.services.milvus_service import MilvusService
+
 logger = get_logger(__name__)
 
 
@@ -24,6 +26,7 @@ class EmployeeOrchestrator:
     def __init__(self):
 
         self.employee_repository = EmployeeRepository()
+        self.milvus_service = MilvusService()
 
         # ==========================================================
     # Create Employee
@@ -277,26 +280,23 @@ class EmployeeOrchestrator:
 
                 )
 
+            # Delete Milvus vector embedding
+            try:
+                self.milvus_service.delete(employee_id=str(employee.id))
+            except Exception as e:
+                logger.warning(f"Could not delete Milvus embedding for employee {employee.id}: {e}")
+
             self.employee_repository.delete(
-
                 db=db,
-
                 employee=employee,
-
             )
 
             logger.info(
-
-                "Employee deleted successfully.",
-
+                "Employee and Milvus embedding deleted successfully.",
                 extra={
-
                     "employee_id": str(employee.id),
-
                     "employee_code": employee.employee_code,
-
                 },
-
             )
 
         finally:

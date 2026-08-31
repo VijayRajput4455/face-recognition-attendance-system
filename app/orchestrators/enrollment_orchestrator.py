@@ -1,3 +1,4 @@
+from pathlib import Path
 from uuid import UUID
 
 from fastapi import HTTPException
@@ -14,6 +15,7 @@ from app.repositories.enrollment_repo import EnrollmentRepository
 
 from app.schemas.enrollment import EnrollmentMessage, EnrollmentResponse
 
+from app.services.milvus_service import MilvusService
 from app.services.rabbitmq_service import RabbitMQClient
 
 from app.utils.file_handler import FileHandler
@@ -31,6 +33,8 @@ class EnrollmentOrchestrator:
         self.enrollment_repository = EnrollmentRepository()
 
         self.rabbitmq = RabbitMQClient()
+
+        self.milvus = MilvusService()
 
     # ==========================================================
     # Start Enrollment
@@ -308,6 +312,123 @@ class EnrollmentOrchestrator:
                 "enrollment_id": str(enrollment.id),
                 "status": enrollment.status,
             }
+
+        finally:
+
+            db.close()
+
+    # ==========================================================
+    # Delete Enrollment Record & Vector
+    # ==========================================================
+
+    def delete(
+        self,
+        enrollment_id: UUID,
+    ) -> None:
+
+        db = SessionLocal()
+
+        try:
+
+            enrollment = self.enrollment_repository.get_by_id(
+                db=db,
+                enrollment_id=enrollment_id,
+            )
+
+            if enrollment is None:
+
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Enrollment not found.",
+                )
+
+            employee_id = enrollment.employee_id
+
+            # 1. Delete vector from Milvus
+            try:
+                self.milvus.delete(employee_id=str(employee_id))
+            except Exception as ex:
+                logger.warning(
+                    f"Could not delete vector from Milvus for employee {employee_id}: {ex}"
+                )
+
+            # 2. Delete video file if exists
+            if enrollment.video_path:
+                try:
+                    p = Path(enrollment.video_path)
+                    if p.exists():
+                        p.unlink(missing_ok=True)
+                except Exception as ex:
+                    logger.warning(
+                        f"Could not delete video file {enrollment.video_path}: {ex}"
+                    )
+
+            # 3. Delete enrollment record from database
+            self.enrollment_repository.delete(
+                db=db,
+                enrollment=enrollment,
+            )
+
+            logger.info(
+                "Enrollment record and Milvus embedding deleted successfully.",
+                extra={
+                    "enrollment_id": str(enrollment_id),
+                    "employee_id": str(employee_id),
+                },
+            )
+
+        finally:
+
+            db.close()
+
+    # ==========================================================
+    # Delete All Enrollments & Vector for Employee
+    # ==========================================================
+
+    def delete_by_employee(
+        self,
+        employee_id: UUID,
+    ) -> None:
+
+        db = SessionLocal()
+
+        try:
+
+            enrollments = self.enrollment_repository.get_by_employee(
+                db=db,
+                employee_id=employee_id,
+            )
+
+            # 1. Delete vector from Milvus
+            try:
+                self.milvus.delete(employee_id=str(employee_id))
+            except Exception as ex:
+                logger.warning(
+                    f"Could not delete vector from Milvus for employee {employee_id}: {ex}"
+                )
+
+            # 2. Delete all enrollment records and files
+            for enrollment in enrollments:
+                if enrollment.video_path:
+                    try:
+                        p = Path(enrollment.video_path)
+                        if p.exists():
+                            p.unlink(missing_ok=True)
+                    except Exception:
+                        pass
+
+                self.enrollment_repository.delete(
+                    db=db,
+                    enrollment=enrollment,
+                )
+
+            logger.info(
+                "All enrollments and Milvus embeddings deleted for employee.",
+                extra={
+                    "employee_id": str(employee_id),
+                    "count": len(enrollments),
+                },
+            )
 
         finally:
 
