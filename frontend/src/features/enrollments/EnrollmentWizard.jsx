@@ -416,7 +416,7 @@ export function EnrollmentWizard() {
   const currentStepIdx = stepKeys.indexOf(currentStep);
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 animate-in fade-in duration-200">
+    <div className="space-y-6 animate-in fade-in duration-200">
       {/* Top Banner with Back Button */}
       <div className="space-y-3">
         <button
@@ -446,7 +446,7 @@ export function EnrollmentWizard() {
               <div
                 key={st.key}
                 className={cn(
-                  'flex items-center gap-3 p-3 rounded-2xl border transition-all duration-200',
+                  'flex items-center gap-3 p-3.5 rounded-2xl border transition-all duration-200',
                   isCurrent
                     ? 'bg-gradient-to-br from-indigo-50/90 to-blue-50/50 border-indigo-300 ring-2 ring-indigo-500/20'
                     : isCompleted
@@ -486,7 +486,7 @@ export function EnrollmentWizard() {
       {/* STEP 1: Select Employee */}
       {currentStep === 'select' && (
         <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-xs space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-100">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-t-0 border-b border-slate-100">
             <div>
               <h3 className="text-base font-bold text-slate-900">
                 Step 1: Choose Employee for Biometric Registration
@@ -544,20 +544,20 @@ export function EnrollmentWizard() {
           </div>
 
           {/* Employee Selection Cards Grid */}
-          <div className="max-h-96 overflow-y-auto pr-1">
+          <div className="max-h-[32rem] overflow-y-auto pr-1">
             {loadingEmployees ? (
-              <div className="py-16 text-center space-y-2">
+              <div className="py-20 text-center space-y-2">
                 <Loader2 className="w-7 h-7 text-indigo-600 animate-spin mx-auto" />
                 <p className="text-xs text-slate-400">Loading employee directory...</p>
               </div>
             ) : filteredEmployees.length === 0 ? (
-              <div className="py-16 text-center bg-slate-50/60 rounded-2xl border border-dashed border-slate-200">
+              <div className="py-20 text-center bg-slate-50/60 rounded-2xl border border-dashed border-slate-200">
                 <User className="w-8 h-8 text-slate-300 mx-auto mb-2" />
                 <h4 className="text-xs font-bold text-slate-700">No matching employees found</h4>
                 <p className="text-xs text-slate-400 mt-0.5">Try clearing your search query or department filter.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
                 {filteredEmployees.map((emp) => {
                   const fullName = `${emp.first_name} ${emp.last_name || ''}`.trim();
                   const initials = getInitials(emp.first_name, emp.last_name);
