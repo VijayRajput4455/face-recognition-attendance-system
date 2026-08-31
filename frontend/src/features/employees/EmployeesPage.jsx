@@ -348,92 +348,87 @@ export function EmployeesPage() {
         badgeIcon={Users}
         title="Workforce Directory"
         description="Manage registered employees, organizational structure assignments, and biometric profiles."
-        actions={
-          <>
-            <button
-              onClick={() => navigate('recognition')}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 active:bg-white/30 text-white text-xs font-semibold backdrop-blur-md border border-white/10 transition-all cursor-pointer"
-            >
-              <ScanFace className="w-4 h-4 text-indigo-300" />
-              Live Recognition
-            </button>
+      />
+
+      {/* Filter & Search Bar with Add Employee Action */}
+      <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
+        <div className="flex flex-col xl:flex-row xl:items-center gap-3 justify-between">
+          <div className="flex flex-1 flex-col md:flex-row md:items-center gap-3">
+            <SearchInput
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Search by name, code, or email..."
+              className="w-full md:max-w-xs"
+            />
+
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Department Filter */}
+              <select
+                value={selectedDepartment}
+                onChange={(e) => setSelectedDepartment(e.target.value)}
+                className="px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              >
+                <option value="">All Departments</option>
+                {departments.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.department_name}
+                  </option>
+                ))}
+              </select>
+
+              {/* Shift Filter */}
+              <select
+                value={selectedShift}
+                onChange={(e) => setSelectedShift(e.target.value)}
+                className="px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              >
+                <option value="">All Shifts</option>
+                {shifts.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.shift_name}
+                  </option>
+                ))}
+              </select>
+
+              {/* Status Filter */}
+              <select
+                value={selectedStatus}
+                onChange={(e) => setSelectedStatus(e.target.value)}
+                className="px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              >
+                <option value="">All Statuses</option>
+                <option value="ACTIVE">Active</option>
+                <option value="PENDING">Pending</option>
+              </select>
+
+              {(searchQuery || selectedDepartment || selectedShift || selectedStatus) && (
+                <button
+                  onClick={() => {
+                    setSearchQuery('');
+                    setSelectedDepartment('');
+                    setSelectedShift('');
+                    setSelectedStatus('');
+                  }}
+                  className="px-3 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+                >
+                  Clear Filters
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Add Employee Action */}
+          <div className="flex items-center justify-end pt-2 xl:pt-0 border-t xl:border-t-0 border-slate-100">
             <button
               onClick={() => {
                 setSelectedEmployee(null);
                 setDrawerOpen(true);
               }}
-              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold text-indigo-950 bg-white hover:bg-indigo-50 active:bg-indigo-100 rounded-xl shadow-md transition-all cursor-pointer"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-xl shadow-xs hover:shadow transition-all cursor-pointer shrink-0"
             >
-              <UserPlus className="w-4 h-4 text-indigo-600" />
+              <UserPlus className="w-4 h-4 text-white" />
               Add Employee
             </button>
-          </>
-        }
-      />
-
-      {/* Filter & Search Bar */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
-        <div className="flex flex-col md:flex-row md:items-center gap-3 justify-between">
-          <SearchInput
-            value={searchQuery}
-            onChange={setSearchQuery}
-            placeholder="Search by name, code, or email..."
-            className="max-w-md"
-          />
-
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Department Filter */}
-            <select
-              value={selectedDepartment}
-              onChange={(e) => setSelectedDepartment(e.target.value)}
-              className="px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-            >
-              <option value="">All Departments</option>
-              {departments.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.department_name}
-                </option>
-              ))}
-            </select>
-
-            {/* Shift Filter */}
-            <select
-              value={selectedShift}
-              onChange={(e) => setSelectedShift(e.target.value)}
-              className="px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-            >
-              <option value="">All Shifts</option>
-              {shifts.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.shift_name}
-                </option>
-              ))}
-            </select>
-
-            {/* Status Filter */}
-            <select
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-            >
-              <option value="">All Statuses</option>
-              <option value="ACTIVE">Active</option>
-              <option value="PENDING">Pending</option>
-            </select>
-
-            {(searchQuery || selectedDepartment || selectedShift || selectedStatus) && (
-              <button
-                onClick={() => {
-                  setSearchQuery('');
-                  setSelectedDepartment('');
-                  setSelectedShift('');
-                  setSelectedStatus('');
-                }}
-                className="px-3 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
-              >
-                Clear Filters
-              </button>
-            )}
           </div>
         </div>
       </div>

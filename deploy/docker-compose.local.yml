@@ -20,7 +20,6 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile.frontend.dev
-    container_name: face-recognition-frontend
     ports:
       - "5173:5173"
     environment:
@@ -41,7 +40,6 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile.api
-    container_name: face-recognition-api
     ports:
       - "8000:8000"
     environment:
@@ -89,7 +87,6 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile.worker
-    container_name: face-recognition-worker
     environment:
       APP_NAME: "Face Recognition Enrollment Worker"
       APP_ENV: development
@@ -130,7 +127,6 @@ services:
   # ========================================================
   postgres:
     image: postgres:16
-    container_name: postgres
     ports:
       - "5432:5432"
     environment:
@@ -153,7 +149,6 @@ services:
   # ========================================================
   rabbitmq:
     image: rabbitmq:3-management
-    container_name: rabbitmq
     ports:
       - "5672:5672"
       - "15672:15672"
@@ -176,7 +171,6 @@ services:
   # ========================================================
   milvus:
     image: milvusdb/milvus:v2.4.4
-    container_name: milvus-standalone
     command: ["milvus", "run", "standalone"]
     environment:
       ETCD_ENDPOINTS: etcd:2379
@@ -198,7 +192,6 @@ services:
   # ========================================================
   etcd:
     image: quay.io/coreos/etcd:v3.5.5
-    container_name: milvus-etcd
     environment:
       - ETCD_AUTO_COMPACTION_MODE=revision
       - ETCD_AUTO_COMPACTION_RETENTION=1000
@@ -216,7 +209,6 @@ services:
   # ========================================================
   minio:
     image: minio/minio:RELEASE.2023-03-20T20-16-18Z
-    container_name: milvus-minio
     environment:
       MINIO_ACCESS_KEY: minioadmin
       MINIO_SECRET_KEY: minioadmin
