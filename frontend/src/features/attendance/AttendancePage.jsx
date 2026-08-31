@@ -389,7 +389,7 @@ export function AttendancePage() {
                 onChange={(e) => setSelectedStatus(e.target.value)}
                 className="px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
               >
-                <option value="">All Statuses</option>
+                <option value="">All Status</option>
                 <option value="PRESENT">Present</option>
                 <option value="ABSENT">Absent</option>
                 <option value="LATE">Late</option>

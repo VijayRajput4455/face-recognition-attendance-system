@@ -43,6 +43,7 @@ export function EmployeesPage() {
   // Filters State
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState('');
+  const [selectedDesignation, setSelectedDesignation] = useState('');
   const [selectedShift, setSelectedShift] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
 
@@ -137,6 +138,10 @@ export function EmployeesPage() {
       if (selectedDepartment && emp.department_id !== selectedDepartment) {
         return false;
       }
+      // Designation filter
+      if (selectedDesignation && emp.designation_id !== selectedDesignation) {
+        return false;
+      }
       // Shift filter
       if (selectedShift && emp.shift_id !== selectedShift) {
         return false;
@@ -149,7 +154,7 @@ export function EmployeesPage() {
       }
       return true;
     });
-  }, [employees, searchQuery, selectedDepartment, selectedShift, selectedStatus, enrollmentMap]);
+  }, [employees, searchQuery, selectedDepartment, selectedDesignation, selectedShift, selectedStatus, enrollmentMap]);
 
   // Handle Edit
   const handleEdit = (emp, e) => {
@@ -376,6 +381,20 @@ export function EmployeesPage() {
                 ))}
               </select>
 
+              {/* Designation Filter */}
+              <select
+                value={selectedDesignation}
+                onChange={(e) => setSelectedDesignation(e.target.value)}
+                className="px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              >
+                <option value="">All Designations</option>
+                {designations.map((desig) => (
+                  <option key={desig.id} value={desig.id}>
+                    {desig.designation_name}
+                  </option>
+                ))}
+              </select>
+
               {/* Shift Filter */}
               <select
                 value={selectedShift}
@@ -396,16 +415,17 @@ export function EmployeesPage() {
                 onChange={(e) => setSelectedStatus(e.target.value)}
                 className="px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
               >
-                <option value="">All Statuses</option>
+                <option value="">All Status</option>
                 <option value="ACTIVE">Active</option>
                 <option value="PENDING">Pending</option>
               </select>
 
-              {(searchQuery || selectedDepartment || selectedShift || selectedStatus) && (
+              {(searchQuery || selectedDepartment || selectedDesignation || selectedShift || selectedStatus) && (
                 <button
                   onClick={() => {
                     setSearchQuery('');
                     setSelectedDepartment('');
+                    setSelectedDesignation('');
                     setSelectedShift('');
                     setSelectedStatus('');
                   }}
@@ -440,7 +460,7 @@ export function EmployeesPage() {
         loading={loadingEmployees}
         emptyTitle="No employees found"
         emptyDescription={
-          searchQuery || selectedDepartment
+          searchQuery || selectedDepartment || selectedDesignation || selectedShift || selectedStatus
             ? 'No employees match your active search filters.'
             : 'Get started by creating your first employee record.'
         }

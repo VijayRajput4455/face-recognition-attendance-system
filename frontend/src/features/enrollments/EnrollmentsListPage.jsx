@@ -183,7 +183,7 @@ export function EnrollmentsListPage() {
             onChange={(e) => setSelectedStatus(e.target.value)}
             className="px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
           >
-            <option value="">All Statuses</option>
+            <option value="">All Status</option>
             <option value="COMPLETED">Completed</option>
             <option value="PROCESSING">Processing</option>
             <option value="PENDING">Pending</option>
