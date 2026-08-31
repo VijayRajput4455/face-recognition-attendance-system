@@ -6,6 +6,7 @@ import { useToast } from '../../context/ToastContext';
 import SearchInput from '../../components/ui/SearchInput';
 import Modal from '../../components/ui/Modal';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import DataTable from '../../components/ui/DataTable';
 import PageBanner from '../../components/ui/PageBanner';
 import { cn } from '../../lib/utils';
 import {
@@ -18,12 +19,15 @@ import {
   UserX,
   Layers,
   Loader2,
+  LayoutGrid,
+  LayoutList,
 } from 'lucide-react';
 
 export function DepartmentsPage() {
   const queryClient = useQueryClient();
   const { success, error: toastError } = useToast();
 
+  const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'list'
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDept, setEditingDept] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -73,7 +77,87 @@ export function DepartmentsPage() {
     return departments.filter((dept) => (deptStaffMap.get(dept.id) || 0) === 0).length;
   }, [departments, deptStaffMap]);
 
-  // Filtered & Sorted List
+  // Columns for DataTable List View
+  const deptColumns = [
+    {
+      header: 'Department',
+      accessor: 'department_name',
+      render: (dept) => (
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shrink-0">
+            <Building2 className="w-4 h-4" />
+          </div>
+          <div>
+            <div className="font-semibold text-slate-900 leading-tight">{dept.department_name}</div>
+            <div className="text-[11px] text-slate-400 font-normal truncate max-w-xs">
+              {dept.description || 'No description provided'}
+            </div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      header: 'Assigned Staff',
+      accessor: 'staffCount',
+      render: (dept) => {
+        const count = deptStaffMap.get(dept.id) || 0;
+        return (
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-xs font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
+              {count}
+            </span>
+            <span className="text-xs text-slate-500">
+              {count === 1 ? 'Employee' : 'Employees'}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      header: 'Status',
+      accessor: 'status',
+      render: (dept) => {
+        const count = deptStaffMap.get(dept.id) || 0;
+        return count > 0 ? (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[11px] font-semibold rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            <span>Active Team</span>
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[11px] font-semibold rounded-full border bg-slate-100 text-slate-600 border-slate-200">
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+            <span>Unstaffed</span>
+          </span>
+        );
+      },
+    },
+    {
+      header: 'Actions',
+      accessor: 'actions',
+      className: 'text-right',
+      cellClassName: 'text-right',
+      render: (dept) => (
+        <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+          <button
+            type="button"
+            onClick={() => handleOpenEdit(dept)}
+            className="w-7 h-7 rounded-lg border border-slate-200 bg-white text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+            title="Edit Department"
+          >
+            <Edit2 className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setDeleteTarget(dept)}
+            className="w-7 h-7 rounded-lg border border-slate-200 bg-white text-slate-500 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+            title="Delete Department"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      ),
+    },
+  ];
   const filteredDepartments = useMemo(() => {
     return departments
       .filter((dept) => {
@@ -348,11 +432,43 @@ export function DepartmentsPage() {
             </div>
           </div>
 
-          {/* Add Department Action */}
-          <div className="flex items-center justify-end pt-2 xl:pt-0 border-t xl:border-t-0 border-slate-100">
+          {/* Add Department Action & View Toggle */}
+          <div className="flex items-center gap-2.5 justify-between sm:justify-end pt-2 xl:pt-0 border-t xl:border-t-0 border-slate-100">
+            {/* View Mode Toggle */}
+            <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200/80">
+              <button
+                type="button"
+                onClick={() => setViewMode('grid')}
+                className={cn(
+                  'px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer',
+                  viewMode === 'grid'
+                    ? 'bg-white text-indigo-600 shadow-2xs'
+                    : 'text-slate-500 hover:text-slate-800'
+                )}
+                title="Grid View"
+              >
+                <LayoutGrid className="w-4 h-4" />
+                <span className="hidden sm:inline">Grid</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('list')}
+                className={cn(
+                  'px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer',
+                  viewMode === 'list'
+                    ? 'bg-white text-indigo-600 shadow-2xs'
+                    : 'text-slate-500 hover:text-slate-800'
+                )}
+                title="List View"
+              >
+                <LayoutList className="w-4 h-4" />
+                <span className="hidden sm:inline">List</span>
+              </button>
+            </div>
+
             <button
               onClick={handleOpenCreate}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-xl shadow-xs hover:shadow transition-all cursor-pointer shrink-0"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-xl shadow-xs hover:shadow transition-all cursor-pointer shrink-0"
             >
               <Plus className="w-4 h-4 text-white" />
               Add Department
@@ -361,8 +477,15 @@ export function DepartmentsPage() {
         </div>
       </div>
 
-      {/* Grid of Department Cards */}
-      {loadingDepts ? (
+      {/* View Mode: List or Grid */}
+      {viewMode === 'list' ? (
+        <DataTable
+          columns={deptColumns}
+          data={filteredDepartments}
+          isLoading={loadingDepts}
+          emptyMessage="No matching departments found."
+        />
+      ) : loadingDepts ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="h-44 bg-white rounded-2xl border border-slate-200 animate-pulse" />
@@ -434,19 +557,30 @@ export function DepartmentsPage() {
                   </div>
 
                   <div>
-                    <h3 className="text-base font-bold text-slate-900">{dept.department_name}</h3>
+                    <h3 className="text-base font-bold text-slate-900 leading-snug">{dept.department_name}</h3>
                     <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
                       {dept.description || 'No description provided.'}
                     </p>
                   </div>
                 </div>
 
-                <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-xs">
-                  <span className="flex items-center gap-1.5 text-slate-500 font-medium">
-                    <Users className="w-4 h-4 text-blue-600" />
-                    {count} {count === 1 ? 'Employee' : 'Employees'}
-                  </span>
-                  <span className="font-mono text-[10px] text-slate-400">{dept.id.substring(0, 8)}</span>
+                <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4 text-slate-400" />
+                    <span className="text-xs font-semibold text-slate-700 font-mono">
+                      {count} {count === 1 ? 'Employee' : 'Employees'}
+                    </span>
+                  </div>
+
+                  {count > 0 ? (
+                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-full">
+                      Active Team
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-medium text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
+                      Unstaffed
+                    </span>
+                  )}
                 </div>
               </div>
             );

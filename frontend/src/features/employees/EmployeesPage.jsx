@@ -31,6 +31,9 @@ import {
   CalendarCheck2,
   Users,
   Power,
+  LayoutGrid,
+  LayoutList,
+  Mail,
 } from 'lucide-react';
 
 export function EmployeesPage() {
@@ -44,6 +47,7 @@ export function EmployeesPage() {
   const [deleteTarget, setDeleteTarget] = useState(null);
 
   // Filters State
+  const [viewMode, setViewMode] = useState('list'); // 'list' | 'grid'
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState('');
   const [selectedDesignation, setSelectedDesignation] = useState('');
@@ -631,14 +635,46 @@ export function EmployeesPage() {
             </div>
           </div>
 
-          {/* Add Employee Action */}
-          <div className="flex items-center justify-end pt-2 xl:pt-0 border-t xl:border-t-0 border-slate-100">
+          {/* Add Employee Action & View Toggle */}
+          <div className="flex items-center gap-2.5 justify-between sm:justify-end pt-2 xl:pt-0 border-t xl:border-t-0 border-slate-100">
+            {/* View Mode Toggle */}
+            <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200/80">
+              <button
+                type="button"
+                onClick={() => setViewMode('list')}
+                className={cn(
+                  'px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer',
+                  viewMode === 'list'
+                    ? 'bg-white text-indigo-600 shadow-2xs'
+                    : 'text-slate-500 hover:text-slate-800'
+                )}
+                title="List View"
+              >
+                <LayoutList className="w-4 h-4" />
+                <span className="hidden sm:inline">List</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('grid')}
+                className={cn(
+                  'px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer',
+                  viewMode === 'grid'
+                    ? 'bg-white text-indigo-600 shadow-2xs'
+                    : 'text-slate-500 hover:text-slate-800'
+                )}
+                title="Grid View"
+              >
+                <LayoutGrid className="w-4 h-4" />
+                <span className="hidden sm:inline">Grid</span>
+              </button>
+            </div>
+
             <button
               onClick={() => {
                 setSelectedEmployee(null);
                 setDrawerOpen(true);
               }}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-xl shadow-xs hover:shadow transition-all cursor-pointer shrink-0"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-xl shadow-xs hover:shadow transition-all cursor-pointer shrink-0"
             >
               <UserPlus className="w-4 h-4 text-white" />
               Add Employee
@@ -647,14 +683,145 @@ export function EmployeesPage() {
         </div>
       </div>
 
-      {/* Employees DataTable */}
-      <DataTable
-        columns={columns}
-        data={filteredEmployees}
-        isLoading={loadingEmployees}
-        emptyMessage="No employees found matching current filters."
-        onRowClick={(emp) => handleViewProfile(emp)}
-      />
+      {/* Employees View: List or Grid */}
+      {viewMode === 'list' ? (
+        <DataTable
+          columns={columns}
+          data={filteredEmployees}
+          isLoading={loadingEmployees}
+          emptyMessage="No employees found matching current filters."
+          onRowClick={(emp) => handleViewProfile(emp)}
+        />
+      ) : (
+        <div>
+          {loadingEmployees ? (
+            <div className="py-20 text-center text-slate-400">Loading workforce directory...</div>
+          ) : filteredEmployees.length === 0 ? (
+            <div className="bg-white rounded-3xl border border-slate-200/80 p-12 text-center text-slate-500">
+              <Users className="w-10 h-10 mx-auto text-slate-300 mb-2" />
+              <h4 className="text-sm font-bold text-slate-800">No Employees Found</h4>
+              <p className="text-xs text-slate-400 mt-1">Try adjusting your filters or search query.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {filteredEmployees.map((emp) => {
+                const fullName = `${emp.first_name} ${emp.last_name || ''}`.trim();
+                const initials = getInitials(emp.first_name, emp.last_name);
+                const avatarColor = getAvatarColor(fullName);
+                const deptName = emp.department_id ? departmentMap.get(emp.department_id) : 'Unassigned';
+                const desigName = emp.designation_id ? designationMap.get(emp.designation_id) : 'Staff';
+                const shiftName = emp.shift_id ? shiftMap.get(emp.shift_id) : null;
+                const enrollment = enrollmentMap.get(emp.id);
+                const isEnrolled = enrollment && enrollment.status === 'COMPLETED';
+
+                return (
+                  <div
+                    key={emp.id}
+                    onClick={() => handleViewProfile(emp)}
+                    className="bg-white rounded-3xl border border-slate-200/80 hover:border-indigo-300/80 p-5 shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer flex flex-col justify-between space-y-4 group"
+                  >
+                    {/* Card Top: Avatar, Name, Code, Status */}
+                    <div>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`w-12 h-12 rounded-2xl border flex items-center justify-center font-bold text-sm shrink-0 shadow-2xs group-hover:scale-105 transition-transform ${avatarColor}`}
+                          >
+                            {initials}
+                          </div>
+                          <div className="min-w-0">
+                            <h4 className="font-bold text-slate-900 text-sm group-hover:text-indigo-600 transition-colors truncate">
+                              {fullName}
+                            </h4>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <span className="font-mono text-[11px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
+                                {emp.employee_code}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <StatusBadge status={emp.employment_status || 'ACTIVE'} />
+                      </div>
+
+                      {/* Info Pills */}
+                      <div className="mt-3.5 space-y-2">
+                        {emp.email && (
+                          <div className="flex items-center gap-1.5 text-xs text-slate-500 truncate">
+                            <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            <span className="truncate">{emp.email}</span>
+                          </div>
+                        )}
+
+                        <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-medium bg-slate-100 text-slate-700 px-2.5 py-1 rounded-lg border border-slate-200">
+                            <Building2 className="w-3 h-3 text-slate-400" />
+                            {deptName}
+                          </span>
+
+                          <span className="inline-flex items-center gap-1 text-[11px] font-medium bg-amber-50 text-amber-700 px-2.5 py-1 rounded-lg border border-amber-200">
+                            <Briefcase className="w-3 h-3 text-amber-500" />
+                            {desigName}
+                          </span>
+
+                          {shiftName && (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-medium bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md border border-blue-200">
+                              <Clock className="w-3 h-3 text-blue-500" />
+                              {shiftName}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Card Footer: Face Enrollment Status & Quick Actions */}
+                    <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                      <div>
+                        {isEnrolled ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                            <UserCheck className="w-3 h-3" /> Face Enrolled
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full border border-slate-200">
+                            <UserX className="w-3 h-3" /> No Face Data
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          type="button"
+                          onClick={(e) => handleEdit(emp, e)}
+                          className="w-7 h-7 rounded-lg border border-slate-200 bg-white text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+                          title="Edit Employee"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => handleEnrollFace(emp, e)}
+                          className="w-7 h-7 rounded-lg border border-slate-200 bg-white text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+                          title="Enroll Face"
+                        >
+                          <ScanFace className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => handleDelete(emp, e)}
+                          className="w-7 h-7 rounded-lg border border-slate-200 bg-white text-slate-500 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+                          title="Delete Employee"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Employee Add/Edit Drawer */}
       <EmployeeDrawer
