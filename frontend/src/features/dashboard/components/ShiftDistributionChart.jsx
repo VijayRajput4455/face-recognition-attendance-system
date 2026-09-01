@@ -27,10 +27,10 @@ export function ShiftDistributionChart({
         <div>
           <div className="flex items-center gap-2">
             <Clock className="w-4 h-4 text-indigo-600" />
-            <h3 className="text-base font-bold text-slate-900">Employee Distribution by Shift</h3>
+            <h3 className="text-base font-bold text-slate-900">Shift Distribution</h3>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
-            Real-time workforce allocation and facial biometric readiness per operational shift
+            Real-time workforce allocation and facial recognition readiness per operational shift
           </p>
         </div>
 

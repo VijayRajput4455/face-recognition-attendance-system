@@ -28,10 +28,10 @@ export function EnrollmentCompletionTargetCard({
         <div>
           <div className="flex items-center gap-2">
             <Target className="w-4 h-4 text-indigo-600" />
-            <h3 className="text-base font-bold text-slate-900">Enrollment Completion Target</h3>
+            <h3 className="text-base font-bold text-slate-900">Face Recognition Completion Target</h3>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
-            Biometric goal compliance and aging profile telemetry
+            Face recognition goal compliance and aging profile telemetry
           </p>
         </div>
         <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">

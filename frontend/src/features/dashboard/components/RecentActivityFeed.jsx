@@ -28,30 +28,37 @@ export function RecentActivityFeed({ activities = [], loading = false, onNavigat
       description: 'System Biometric Verification Engine initialized and ready',
       timestamp: new Date().toISOString(),
       status: 'COMPLETED',
+      title: 'Milvus Cluster Connected',
+      description: 'System Face Recognition Verification Engine initialized and ready',
+      timestamp: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
+      type: 'system',
+      status: 'nominal',
     },
   ];
 
+  const items = activities && activities.length > 0 ? activities : defaultActivities;
+
   const filteredActivities = useMemo(() => {
-    if (filterType === 'ALL') return displayActivities;
-    return displayActivities.filter((act) => {
+    if (filterType === 'ALL') return items;
+    return items.filter((act) => {
       if (filterType === 'COMPLETED') return act.status === 'COMPLETED' || act.type === 'face_enrolled';
       if (filterType === 'PENDING') return act.status === 'PENDING' || act.status === 'PROCESSING';
       if (filterType === 'FAILED') return act.status === 'FAILED';
       return true;
     });
-  }, [displayActivities, filterType]);
+  }, [items, filterType]);
 
   return (
-    <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-7 shadow-xs h-full flex flex-col justify-between space-y-6">
+    <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-7 shadow-xs space-y-5">
       {/* 1. Header with Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
         <div>
           <div className="flex items-center gap-2">
-            <Activity className="w-5 h-5 text-indigo-600" />
-            <h3 className="text-base font-bold text-slate-900">Recent Biometric Activity & Audit</h3>
+            <Activity className="w-4 h-4 text-indigo-600" />
+            <h3 className="text-base font-bold text-slate-900">Recent Face Recognition Activity & Audit</h3>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
-            Real-time telemetry stream of face indexing, video processing, and verification events
+            Real-time chronological log of face enrollments, vector deletions, and security authentications
           </p>
         </div>
 

@@ -64,8 +64,9 @@ export function Dashboard({ setActiveTab }) {
         badge="Enterprise Analytics"
         badgeIcon={Sparkles}
         title="Executive Dashboard"
-        description="Real-time employee metrics, facial recognition telemetry, and biometric workforce analytics."
+        description="Real-time employee metrics, facial recognition telemetry, and workforce attendance analytics."
         actions={
+
           <div className="flex items-center space-x-3">
             <div className="flex items-center space-x-2 rounded-xl border border-white/15 bg-white/10 px-3.5 py-2 text-xs font-semibold text-white backdrop-blur-md shadow-xs">
               <Calendar className="h-3.5 w-3.5 text-indigo-200" />

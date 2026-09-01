@@ -66,12 +66,13 @@ export function EnrollmentPipelineChart({ enrollments = [], totalEmployees = 0, 
         <div>
           <div className="flex items-center gap-2">
             <div className="w-2.5 h-2.5 rounded-full bg-indigo-600 animate-pulse" />
-            <h3 className="text-base font-bold text-slate-900">Biometric Pipeline Throughput</h3>
+            <h3 className="text-base font-bold text-slate-900">Face Recognition Pipeline Throughput</h3>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
             End-to-end telemetry from raw video intake to 512-D Milvus vector ingestion
           </p>
         </div>
+
 
         <div className="flex items-center gap-2">
           <span className="text-[11px] font-semibold text-slate-600 bg-slate-100 px-3 py-1 rounded-xl border border-slate-200">

@@ -113,8 +113,9 @@ export function Employees({ setActiveTab, setSelectedEmployeeForEnrollment }) {
             Employee Directory
           </h2>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Manage organization personnel, department assignments, and biometric face registration states.
+            Manage organization personnel, department assignments, and face recognition registration states.
           </p>
+
         </div>
 
         <div className="flex items-center space-x-3">

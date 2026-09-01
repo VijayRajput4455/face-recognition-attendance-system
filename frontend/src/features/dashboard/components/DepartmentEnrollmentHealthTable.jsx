@@ -132,8 +132,9 @@ export function DepartmentEnrollmentHealthTable({
           </div>
           <div>
             <p className="font-semibold text-slate-700">No departments configured yet</p>
-            <p className="text-slate-400 text-[11px] mt-0.5">Add departments to track organizational biometric compliance</p>
+            <p className="text-slate-400 text-[11px] mt-0.5">Add departments to track organizational face recognition compliance</p>
           </div>
+
           <button
             type="button"
             onClick={() => onSelectDepartment?.()}

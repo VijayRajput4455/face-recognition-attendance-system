@@ -39,8 +39,8 @@ export function RecognitionSystemHealthCard({
       color: milvusHealthy ? 'emerald' : 'amber',
     },
     {
-      name: 'Indexed Gallery',
-      role: 'Registered Biometrics',
+      name: 'Vector Gallery',
+      role: 'Registered Face Vectors',
       status: `${vectorCount.toLocaleString()} Vectors`,
       latency: '512-Dim L2',
       icon: Layers,

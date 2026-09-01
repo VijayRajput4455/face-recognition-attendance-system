@@ -376,7 +376,7 @@ export function EmployeesPage() {
       },
     },
     {
-      header: 'Biometric Status',
+      header: 'Face Recognition',
       accessor: 'enrollment',
       render: (emp) => {
         const enrollment = enrollmentMap.get(emp.id);
@@ -430,8 +430,9 @@ export function EmployeesPage() {
         badge="Workforce Management"
         badgeIcon={Users}
         title="Workforce Directory"
-        description="Manage registered employees, organizational structure assignments, and biometric profiles."
+        description="Manage registered employees, organizational structure assignments, and face recognition profiles."
       />
+
 
       {/* Real-Time Blue Theme Metric Toggles */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -618,9 +619,10 @@ export function EmployeesPage() {
                 <option value="">All Status</option>
                 <option value="ACTIVE">Active Staff ({activeEmployeesCount})</option>
                 <option value="INACTIVE">Inactive Staff ({inactiveEmployeesCount})</option>
-                <option value="COMPLETED">Biometric Enrolled ({enrolledEmployeesCount})</option>
+                <option value="COMPLETED">Face Enrolled ({enrolledEmployeesCount})</option>
                 <option value="PENDING">Pending Enrollment</option>
               </select>
+
 
               {(searchQuery || selectedDepartment || selectedDesignation || selectedShift || selectedStatus) && (
                 <button
@@ -872,9 +874,10 @@ export function EmployeesPage() {
         isLoading={deleteMutation.isPending}
         danger
         title="Delete Employee Record?"
-        description={`Are you sure you want to permanently remove ${deleteTarget?.first_name} ${deleteTarget?.last_name || ''} (${deleteTarget?.employee_code})? This will delete all biometric embeddings and attendance history.`}
+        description={`Are you sure you want to permanently remove ${deleteTarget?.first_name} ${deleteTarget?.last_name || ''} (${deleteTarget?.employee_code})? This will delete all face recognition embeddings and attendance history.`}
         confirmText="Delete Record"
       />
+
     </div>
   );
 }

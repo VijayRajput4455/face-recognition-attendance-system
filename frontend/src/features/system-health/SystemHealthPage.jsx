@@ -220,11 +220,79 @@ export function SystemHealthPage() {
         </div>
       </div>
 
+      {/* Node Topologies & Quality Spec */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-4">
+          <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+            <Cpu className="w-4 h-4 text-indigo-600" /> AI Vector Pipeline Architecture
+          </h3>
+          <div className="space-y-3 text-xs text-slate-600">
+            <div className="flex justify-between items-center py-2 border-b border-slate-100">
+              <span className="font-medium text-slate-500">Face Detector</span>
+              <span className="font-semibold text-slate-800">RetinaFace (ResNet50 Backbone)</span>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-slate-100">
+              <span className="font-medium text-slate-500">Embedding Extractor</span>
+              <span className="font-semibold text-slate-800">ArcFace (512-D Normalized Vector)</span>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-slate-100">
+              <span className="font-medium text-slate-500">Vector Storage Engine</span>
+              <span className="font-semibold text-slate-800">Milvus Standalone (v2.4+)</span>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-slate-100">
+              <span className="font-medium text-slate-500">Index Type</span>
+              <span className="font-semibold text-slate-800">HNSW (M=16, efConstruction=200)</span>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-slate-100">
+              <span className="font-medium text-slate-500">Search Parameter</span>
+              <span className="font-semibold text-slate-800">ef=64 (Sub-millisecond ANN Search)</span>
+            </div>
+            <div className="flex justify-between items-center py-2">
+              <span className="font-medium text-slate-500">Inference Device</span>
+              <span className="font-semibold text-slate-800">ONNX Runtime (CPU / CUDA Auto)</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-4">
+          <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-indigo-600" /> Face Quality Evaluation Rules
+          </h3>
+          <div className="space-y-3 text-xs text-slate-600">
+            <div className="flex justify-between items-center py-2 border-b border-slate-100">
+              <span className="font-medium text-slate-500">Detection Confidence Threshold</span>
+              <span className="font-semibold text-slate-800">&gt;= 0.60 (RetinaFace)</span>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-slate-100">
+              <span className="font-medium text-slate-500">Laplacian Blur Threshold</span>
+              <span className="font-semibold text-slate-800">&gt;= 100.0 (Sharp Focus)</span>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-slate-100">
+              <span className="font-medium text-slate-500">Max Head Yaw / Pitch Angle</span>
+              <span className="font-semibold text-slate-800">&lt;= 30.0 degrees</span>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-slate-100">
+              <span className="font-medium text-slate-500">Illumination Range</span>
+              <span className="font-semibold text-slate-800">40 - 220 Mean Pixel Intensity</span>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-slate-100">
+              <span className="font-medium text-slate-500">High Confidence Match</span>
+              <span className="font-semibold text-emerald-600 font-mono">&gt;= 0.60 Cosine</span>
+            </div>
+            <div className="flex justify-between items-center py-2">
+              <span className="font-medium text-slate-500">Minimum Identity Verification</span>
+              <span className="font-semibold text-amber-600 font-mono">&gt;= 0.45 Cosine</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Indexed Vectors Roster */}
       <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 pb-4">
           <div>
-            <h3 className="text-base font-bold text-slate-900">Indexed Biometric Vectors</h3>
+            <h3 className="text-base font-bold text-slate-900">Indexed Face Recognition Vectors</h3>
             <p className="text-xs text-slate-500 mt-0.5">Registered employee facial representations stored in Milvus</p>
           </div>
 
@@ -289,12 +357,11 @@ export function SystemHealthPage() {
               className: 'text-right',
               cellClassName: 'text-right',
               render: (item) => {
-                const empId = item.employee_id || item.id;
                 return (
                   <button
                     onClick={() => setDeleteTargetEmployee(item)}
                     className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                    title="Delete biometric vector"
+                    title="Delete face recognition vector"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -305,7 +372,7 @@ export function SystemHealthPage() {
           data={filteredIndexed}
           loading={loadingIndexed}
           emptyTitle="No vectors indexed in Milvus"
-          emptyDescription="Perform biometric enrollment to index facial embeddings."
+          emptyDescription="Perform face enrollment to index facial embeddings."
         />
       </div>
 
@@ -317,7 +384,7 @@ export function SystemHealthPage() {
               <AlertTriangle className="w-5 h-5 text-rose-600" /> Danger Zone: Vector Database Maintenance
             </h3>
             <p className="text-xs text-slate-600 leading-relaxed max-w-2xl">
-              Permanently purge all biometric vector representations from the Milvus cluster. Employee database records
+              Permanently purge all face recognition vector representations from the Milvus cluster. Employee database records
               will remain intact, but facial recognition will be disabled until employees are re-enrolled.
             </p>
           </div>
@@ -340,7 +407,7 @@ export function SystemHealthPage() {
         }
         isLoading={deleteEmployeeVectorMutation.isPending}
         danger
-        title="Delete Employee Biometric Vector?"
+        title="Delete Employee Face Recognition Vector?"
         description="This will remove the facial embedding from the Milvus index. The employee will no longer be recognized in camera streams."
         confirmText="Delete Vector"
       />
@@ -354,7 +421,7 @@ export function SystemHealthPage() {
         danger
         requireVerificationText="DELETE ALL VECTORS"
         title="CRITICAL: Purge Entire Vector Collection?"
-        description="This operation deletes every biometric facial representation in Milvus. All employees will need to re-enroll face biometrics."
+        description="This operation deletes every facial representation in Milvus. All employees will need to re-enroll face recognition."
         confirmText="Purge Vector Database"
       />
     </div>

@@ -35,12 +35,13 @@ export function DepartmentBiometricMatrix({
         <div>
           <div className="flex items-center gap-2">
             <Building2 className="w-4 h-4 text-indigo-600" />
-            <h3 className="text-base font-bold text-slate-900">Department Biometric Enrollment Matrix</h3>
+            <h3 className="text-base font-bold text-slate-900">Department Face Recognition Matrix</h3>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
-            Biometric verification coverage and enrolled staff count across departments
+            Face recognition coverage and enrolled staff count across departments
           </p>
         </div>
+
 
         <button
           type="button"

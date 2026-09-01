@@ -396,13 +396,13 @@ export function EnrollmentsListPage() {
               </button>
             )}
 
-            {/* Delete Biometrics Button */}
+            {/* Delete Face Data Button */}
             <button
               type="button"
               onClick={() => setDeleteTarget(item)}
               className="w-8 h-8 rounded-xl border border-slate-200/80 bg-white text-slate-500 hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50/60 shadow-2xs transition-all duration-150 flex items-center justify-center cursor-pointer active:scale-95 group"
-              title="Delete Biometric Vectors & Record"
-              aria-label="Delete Biometric Vectors & Record"
+              title="Delete Face Vectors & Record"
+              aria-label="Delete Face Vectors & Record"
             >
               <Trash2 className="w-3.5 h-3.5 transition-transform group-hover:scale-110" />
             </button>
@@ -425,9 +425,9 @@ export function EnrollmentsListPage() {
     <div className="space-y-6 animate-in fade-in duration-200">
       {/* Hero Header */}
       <PageBanner
-        badge="Biometric Pipeline"
+        badge="Face Pipeline"
         badgeIcon={Sparkles}
-        title="Biometric Enrollment Pipeline"
+        title="Face Enrollment Pipeline"
         description="Monitor asynchronous face extraction, embedding generation, and Milvus vector indexing jobs."
       />
 
@@ -553,7 +553,7 @@ export function EnrollmentsListPage() {
         </button>
       </div>
 
-      {/* Filter & Search Bar with Enroll Face Biometrics Action */}
+      {/* Filter & Search Bar with Enroll Face Recognition Action */}
       <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
         <div className="flex flex-col xl:flex-row xl:items-center gap-3 justify-between">
           <div className="flex flex-1 flex-col md:flex-row md:items-center gap-3">
@@ -598,9 +598,9 @@ export function EnrollmentsListPage() {
                 className="px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
               >
                 <option value="">All Designations</option>
-                {designations.map((desig) => (
-                  <option key={desig.id} value={desig.id}>
-                    {desig.designation_name}
+                {designations.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.designation_name}
                   </option>
                 ))}
               </select>
@@ -649,14 +649,14 @@ export function EnrollmentsListPage() {
             </div>
           </div>
 
-          {/* Relocated Primary Action Button */}
+          {/* Primary Action Button */}
           <div className="flex items-center justify-end pt-2 xl:pt-0 border-t xl:border-t-0 border-slate-100">
             <button
               onClick={() => navigate('enrollments', { mode: 'wizard' })}
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-xl shadow-xs hover:shadow transition-all cursor-pointer shrink-0"
             >
               <Plus className="w-4 h-4 text-white" />
-              Enroll Face Biometrics
+              Enroll Face Recognition
             </button>
           </div>
         </div>
@@ -674,8 +674,8 @@ export function EnrollmentsListPage() {
           }
         }}
         emptyTitle="No enrollment jobs found"
-        emptyDescription="No biometric video processing jobs match the selected filter criteria."
-        emptyActionLabel="Enroll Face Biometrics"
+        emptyDescription="No video face enrollment jobs match the selected filter criteria."
+        emptyActionLabel="Enroll Face Recognition"
         onEmptyAction={() => navigate('enrollments', { mode: 'wizard' })}
       />
 
@@ -686,9 +686,9 @@ export function EnrollmentsListPage() {
         onConfirm={() => deleteMutation.mutate(deleteTarget?.id)}
         isLoading={deleteMutation.isPending}
         danger
-        title="Delete Biometric Embedding & Enrollment?"
-        description={`Are you sure you want to remove face biometric vectors for ${targetEmpName} (${targetEmp?.employee_code || ''})? This will delete the 512-D embedding from Milvus vector database and clear the enrollment record. The employee record itself will NOT be deleted.`}
-        confirmText="Delete Biometrics"
+        title="Delete Face Embedding & Enrollment?"
+        description={`Are you sure you want to remove face recognition vectors for ${targetEmpName} (${targetEmp?.employee_code || ''})? This will delete the 512-D embedding from Milvus vector database and clear the enrollment record. The employee record itself will NOT be deleted.`}
+        confirmText="Delete Face Vectors"
       />
     </div>
   );

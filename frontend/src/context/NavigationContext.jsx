@@ -12,12 +12,13 @@ export const NAV_ITEMS = [
   { id: 'shifts', label: 'Shifts', group: 'WORKFORCE' },
   // Attendance
   { id: 'attendance', label: 'Attendance', group: 'ATTENDANCE' },
-  // AI & Biometrics
-  { id: 'recognition', label: 'Face Recognition', group: 'AI & BIOMETRICS' },
-  { id: 'enrollments', label: 'Enrollments', group: 'AI & BIOMETRICS' },
+  // Face Recognition
+  { id: 'enrollments', label: 'Face Enrollment', group: 'FACE RECOGNITION' },
+  { id: 'recognition', label: 'Face Recognition', group: 'FACE RECOGNITION' },
   // System
   { id: 'system-health', label: 'System Health', group: 'SYSTEM' },
 ];
+
 
 export function NavigationProvider({ children }) {
   const [currentPage, setCurrentPage] = useState('dashboard');
@@ -73,8 +74,9 @@ export function NavigationProvider({ children }) {
     if (currentPage === 'employee-profile' && pageParams.employeeName) {
       crumbs.push({ label: pageParams.employeeName, isCurrent: true });
     } else if (currentPage === 'enrollment-wizard') {
-      crumbs.push({ label: 'Enroll Face Biometrics', isCurrent: true });
+      crumbs.push({ label: 'Enroll Face Recognition', isCurrent: true });
     }
+
 
     return crumbs;
   }, [currentPage, pageParams]);

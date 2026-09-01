@@ -34,10 +34,10 @@ export function ShiftReadinessHeatmap({
         <div>
           <div className="flex items-center gap-2">
             <Clock className="w-4 h-4 text-indigo-600" />
-            <h3 className="text-base font-bold text-slate-900">Shift Allocation & Biometric Readiness</h3>
+            <h3 className="text-base font-bold text-slate-900">Shift Allocation & Face Recognition Readiness</h3>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
-            Operational work shifts and facial recognition readiness of scheduled staff
+            Operational schedule coverage and face verification readiness
           </p>
         </div>
 

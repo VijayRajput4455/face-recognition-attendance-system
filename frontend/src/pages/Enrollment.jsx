@@ -173,8 +173,9 @@ export function Enrollment() {
             User Face Enrollment Studio
           </h2>
           <p className="text-xs font-medium text-slate-500 mt-0.5">
-            Register face biometric identity data by uploading video or capturing multi-angle camera samples.
+            Register face recognition identity vectors by uploading video or capturing multi-angle camera samples.
           </p>
+
         </div>
 
         {selectedEmployeeObj && (

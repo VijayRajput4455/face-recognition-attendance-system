@@ -93,7 +93,7 @@ export function EmployeeProfile() {
       queryClient.invalidateQueries({ queryKey: ['employees'] });
       queryClient.invalidateQueries({ queryKey: ['milvus-count'] });
       queryClient.invalidateQueries({ queryKey: ['milvus-employee', employeeId] });
-      success('Enrollment Deleted', 'Biometric vector and enrollment record removed.');
+      success('Enrollment Deleted', 'Face recognition vector and enrollment record removed.');
       setDeleteEnrollmentTarget(null);
     },
     onError: (err) => {
@@ -101,7 +101,7 @@ export function EmployeeProfile() {
     },
   });
 
-  // Delete All Biometrics For Employee Mutation
+  // Delete All Face Vectors For Employee Mutation
   const deleteBiometricsMutation = useMutation({
     mutationFn: () => enrollmentsApi.deleteByEmployeeId(employeeId),
     onSuccess: () => {
@@ -111,13 +111,14 @@ export function EmployeeProfile() {
       queryClient.invalidateQueries({ queryKey: ['employees'] });
       queryClient.invalidateQueries({ queryKey: ['milvus-count'] });
       queryClient.invalidateQueries({ queryKey: ['milvus-employee', employeeId] });
-      success('Biometrics Cleared', 'Facial vector removed from Milvus. Employee record remains intact.');
+      success('Face Vectors Cleared', 'Facial vector removed from Milvus. Employee record remains intact.');
       setIsDeleteBiometricsOpen(false);
     },
     onError: (err) => {
       toastError('Clear Failed', err.message);
     },
   });
+
 
   // Month & Year for Monthly Report tab
   const now = new Date();
@@ -292,7 +293,7 @@ export function EmployeeProfile() {
               className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-xl shadow-xs hover:shadow transition-all cursor-pointer"
             >
               <ScanFace className="w-4 h-4" />
-              {isEnrolled ? 'Re-enroll Face' : 'Enroll Biometrics'}
+              {isEnrolled ? 'Re-enroll Face' : 'Enroll Face Recognition'}
             </button>
           </div>
         </div>
@@ -302,8 +303,9 @@ export function EmployeeProfile() {
       <div className="flex items-center gap-2 border-b border-slate-200 pb-1">
         {[
           { id: 'overview', label: 'Overview', icon: User },
-          { id: 'biometrics', label: 'Biometrics & AI', icon: ScanFace },
+          { id: 'biometrics', label: 'Face Recognition & AI', icon: ScanFace },
         ].map((tab) => {
+
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
           return (
@@ -444,7 +446,7 @@ export function EmployeeProfile() {
                   <ScanFace className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900">Milvus Biometric Vector Status</h3>
+                  <h3 className="text-sm font-bold text-slate-900">Milvus Face Recognition Vector Status</h3>
                   <p className="text-xs text-slate-500">512-dimensional facial embedding in standalone cluster</p>
                 </div>
               </div>
@@ -457,10 +459,11 @@ export function EmployeeProfile() {
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition-all cursor-pointer"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
-                    Delete Biometrics from Milvus
+                    Delete Face Vectors from Milvus
                   </button>
                 )}
               </div>
+
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
@@ -555,7 +558,7 @@ export function EmployeeProfile() {
         isLoading={deleteMutation.isPending}
         danger
         title="Delete Employee Record?"
-        description={`Are you sure you want to permanently delete ${fullName} (${employee.employee_code})? This action cannot be undone and will delete all biometric embeddings.`}
+        description={`Are you sure you want to permanently delete ${fullName} (${employee.employee_code})? This action cannot be undone and will delete all face recognition embeddings.`}
         confirmText="Delete Record"
       />
 
@@ -571,17 +574,18 @@ export function EmployeeProfile() {
         confirmText="Delete Enrollment"
       />
 
-      {/* Delete All Biometrics Dialog */}
+      {/* Delete All Face Vectors Dialog */}
       <ConfirmDialog
         isOpen={isDeleteBiometricsOpen}
         onClose={() => setIsDeleteBiometricsOpen(false)}
         onConfirm={() => deleteBiometricsMutation.mutate()}
         isLoading={deleteBiometricsMutation.isPending}
         danger
-        title="Remove All Facial Biometrics from Milvus?"
-        description={`Are you sure you want to remove all biometric embeddings for ${fullName} (${employee.employee_code}) from Milvus? The employee profile and details will remain intact.`}
-        confirmText="Remove Biometrics"
+        title="Remove All Face Vectors from Milvus?"
+        description={`Are you sure you want to remove all face recognition embeddings for ${fullName} (${employee.employee_code}) from Milvus? The employee profile and details will remain intact.`}
+        confirmText="Remove Face Vectors"
       />
+
     </div>
   );
 }

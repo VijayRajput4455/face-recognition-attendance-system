@@ -22,8 +22,8 @@ export function DashboardHeader({
     <PageBanner
       badge="Enterprise Analytics"
       badgeIcon={Sparkles}
-      title="Executive Dashboard"
-      description="Real-time employee metrics, facial recognition telemetry, and biometric workforce analytics."
+      title="Executive Workforce Intelligence"
+      description="Real-time employee metrics, facial recognition telemetry, and workforce attendance analytics."
       actions={
         <div className="flex flex-wrap items-center gap-2.5">
           {/* Date Range Selector */}

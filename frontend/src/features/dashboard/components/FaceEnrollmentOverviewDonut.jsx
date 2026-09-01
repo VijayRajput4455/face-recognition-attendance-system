@@ -79,10 +79,10 @@ export function FaceEnrollmentOverviewDonut({
         <div>
           <div className="flex items-center gap-2">
             <ScanFace className="w-4 h-4 text-indigo-600" />
-            <h3 className="text-base font-bold text-slate-900">Face Enrollment Overview</h3>
+            <h3 className="text-base font-bold text-slate-900">Face Recognition Status</h3>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
-            Biometric status breakdown across workforce
+            Face enrollment status breakdown across workforce
           </p>
         </div>
         <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">

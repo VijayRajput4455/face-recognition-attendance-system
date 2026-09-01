@@ -389,11 +389,12 @@ export function RecognitionPage() {
     <div className="space-y-6 w-full animate-in fade-in duration-200">
       {/* Top Banner */}
       <PageBanner
-        badge="Biometric AI Engine"
+        badge="Face AI Engine"
         badgeIcon={ScanFace}
         title="Face Recognition Studio"
         description="Verify and test employee face vectors using live webcam capture or photo uploads against the Milvus database."
       />
+
 
       {/* Real-Time Blue Theme Metric Toggles (Matching Employees & Enrollment Page) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -969,8 +970,9 @@ export function RecognitionPage() {
             }
           }}
           emptyTitle="No Recognition Scans Yet"
-          emptyDescription="Upload an employee photo or use the live camera above to perform real-time biometric identification."
+          emptyDescription="Upload an employee photo or use the live camera above to perform real-time face recognition."
         />
+
       </div>
     </div>
   );

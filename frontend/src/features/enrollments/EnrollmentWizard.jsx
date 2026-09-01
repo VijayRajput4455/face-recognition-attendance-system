@@ -338,8 +338,9 @@ export function EnrollmentWizard() {
               queryClient.invalidateQueries({ queryKey: ['milvus-count'] });
               queryClient.invalidateQueries({ queryKey: ['employee', selectedEmployee?.id] });
               queryClient.invalidateQueries({ queryKey: ['enrollments-employee', selectedEmployee?.id] });
-              success('Enrollment Complete', `${selectedEmployee?.first_name || 'Employee'}'s face biometric has been registered.`);
+              success('Enrollment Complete', `${selectedEmployee?.first_name || 'Employee'}'s face recognition profile has been registered.`);
               setCurrentStep('result');
+
             } else if (res.status === 'FAILED') {
               if (pollInterval) clearInterval(pollInterval);
               setErrorMessage(res.error_message || 'Facial vector generation failed. Please try with clearer lighting.');
@@ -428,9 +429,9 @@ export function EnrollmentWizard() {
         </button>
 
         <PageBanner
-          badge="Biometric AI Registration"
+          badge="Face AI Registration"
           badgeIcon={ScanFace}
-          title="Face Biometric Enrollment Studio"
+          title="Face Recognition Enrollment Studio"
           description="Register and index 512-D InsightFace facial vector galleries in Milvus for high-accuracy workforce recognition."
         />
       </div>
@@ -489,12 +490,13 @@ export function EnrollmentWizard() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-t-0 border-b border-slate-100">
             <div>
               <h3 className="text-base font-bold text-slate-900">
-                Step 1: Choose Employee for Biometric Registration
+                Step 1: Choose Employee for Face Registration
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
                 Select an employee from your workforce directory to generate and store face vectors
               </p>
             </div>
+
             {selectedEmployee && (
               <span className="text-xs font-semibold px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200/80 self-start sm:self-auto">
                 Selected: {selectedEmployee.first_name} {selectedEmployee.last_name || ''}
@@ -664,12 +666,13 @@ export function EnrollmentWizard() {
             <div>
               <h3 className="text-base font-bold text-slate-900">Step 2: Provide Face Photos or Video</h3>
               <p className="text-xs text-slate-500 mt-0.5">
-                Enrolling biometrics for{' '}
+                Enrolling face vectors for{' '}
                 <strong className="text-slate-900">
                   {selectedEmployee?.first_name} {selectedEmployee?.last_name || ''} ({selectedEmployee?.employee_code})
                 </strong>
               </p>
             </div>
+
 
             {/* Switch Mode Tabs */}
             <div className="flex bg-slate-100 p-1 rounded-xl self-start sm:self-auto">
@@ -995,8 +998,9 @@ export function EnrollmentWizard() {
                 <ShieldCheck className="w-8 h-8" />
               </div>
               <div>
-                <h3 className="text-xl font-bold text-slate-900">Biometric Registration Successful</h3>
+                <h3 className="text-xl font-bold text-slate-900">Face Recognition Registration Successful</h3>
                 <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
+
                   Facial vectors for{' '}
                   <strong className="text-slate-900">
                     {selectedEmployee?.first_name} {selectedEmployee?.last_name || ''}

@@ -381,16 +381,17 @@ export function EmployeeDrawer({ isOpen, onClose, employee, onEnrollFace }) {
           </div>
         </div>
 
-        {/* Biometrics Note */}
+        {/* Face Recognition Note */}
         {!isEditing && (
           <div className="p-3.5 rounded-xl bg-indigo-50/60 border border-indigo-100/80 flex items-start gap-3 text-xs">
             <Sparkles className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
             <div className="text-slate-600 leading-relaxed">
-              <strong className="text-slate-900 font-semibold block">Face Biometrics:</strong>
-              After saving, you will be prompted to capture or upload a video to enroll this employee's facial features into the AI vector database.
+              <strong className="text-slate-900 font-semibold block">Face Recognition:</strong>
+              After saving, you can capture or upload photos / video to enroll this employee's facial vectors into the AI recognition gallery.
             </div>
           </div>
         )}
+
       </form>
     </Drawer>
   );

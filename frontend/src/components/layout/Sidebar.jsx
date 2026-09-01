@@ -35,10 +35,10 @@ export function Sidebar() {
       ],
     },
     {
-      group: 'AI & BIOMETRICS',
+      group: 'FACE RECOGNITION',
       items: [
+        { id: 'enrollments', label: 'Face Enrollment', icon: Video },
         { id: 'recognition', label: 'Face Recognition', icon: ScanFace },
-        { id: 'enrollments', label: 'Enrollments', icon: Video },
       ],
     },
     {
@@ -46,6 +46,7 @@ export function Sidebar() {
       items: [{ id: 'system-health', label: 'System Health', icon: Activity }],
     },
   ];
+
 
   const handleNav = (id) => {
     navigate(id);
@@ -85,11 +86,12 @@ export function Sidebar() {
                   FaceAttend <span className="text-indigo-600">AI</span>
                 </span>
                 <span className="text-[10px] text-slate-400 font-medium tracking-wide mt-1 truncate">
-                  AI Biometric Identity
+                  AI Face Recognition
                 </span>
               </div>
             )}
           </div>
+
 
           {/* Desktop Collapse Toggle */}
           <button

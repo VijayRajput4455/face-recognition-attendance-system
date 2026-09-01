@@ -25,7 +25,7 @@ export function LiveBiometricTelemetry({
         <div>
           <div className="flex items-center gap-2">
             <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-            <h3 className="text-base font-bold text-slate-900">Live Biometric Pipeline Feed</h3>
+            <h3 className="text-base font-bold text-slate-900">Live Face Recognition Pipeline Feed</h3>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
             Real-time video vectorization jobs, neural embeddings status, and failure logs
@@ -55,9 +55,10 @@ export function LiveBiometricTelemetry({
       {filteredEnrollments.length === 0 ? (
         <div className="py-12 text-center text-slate-400 text-xs">
           <Video className="w-8 h-8 mx-auto mb-2 text-slate-300" />
-          No biometric enrollment records matching filter.
+          No face enrollment records matching filter.
         </div>
       ) : (
+
         <div className="divide-y divide-slate-100">
           {filteredEnrollments.slice(0, 8).map((enr) => {
             const emp = employeeMap.get(enr.employee_id);

@@ -148,13 +148,14 @@ export function WorkforceDistributionBarChart({
           <div className="flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-indigo-600" />
             <h3 className="text-base font-bold text-slate-900">
-              Workforce Allocation & Biometric Distribution
+              Workforce Allocation & Face Recognition Distribution
             </h3>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
-            Cross-attribute workforce share and biometric readiness breakdown
+            Cross-attribute workforce share and face recognition readiness breakdown
           </p>
         </div>
+
 
         {/* Dimension & View Controls */}
         <div className="flex flex-wrap items-center gap-2.5 self-start lg:self-auto shrink-0">
