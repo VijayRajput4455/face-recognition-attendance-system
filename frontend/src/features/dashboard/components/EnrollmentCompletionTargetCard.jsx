@@ -15,13 +15,18 @@ export function EnrollmentCompletionTargetCard({
   const gap = Math.max(0, targetPct - parseFloat(currentPct)).toFixed(1);
 
   return (
-    <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-7 shadow-xs flex flex-col justify-between space-y-6">
-      <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-        <div className="flex items-center gap-2">
-          <Target className="w-4 h-4 text-indigo-600" />
-          <h3 className="text-sm font-bold text-slate-900">Enrollment Completion Target</h3>
+    <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-7 shadow-xs h-full flex flex-col justify-between space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <Target className="w-4 h-4 text-indigo-600" />
+            <h3 className="text-base font-bold text-slate-900">Enrollment Completion Target</h3>
+          </div>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Biometric goal compliance and aging profile telemetry
+          </p>
         </div>
-        <span className="text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 rounded-full">
+        <span className="text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200/80 px-3 py-1.5 rounded-xl self-start sm:self-auto shrink-0">
           Target: {targetPct}%
         </span>
       </div>

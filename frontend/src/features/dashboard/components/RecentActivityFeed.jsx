@@ -4,7 +4,7 @@ import { cn, formatDateTime } from '../../../lib/utils';
 
 export function RecentActivityFeed({ activities = [], loading = false, onNavigate }) {
   return (
-    <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-7 shadow-xs space-y-6">
+    <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-7 shadow-xs h-full flex flex-col justify-between space-y-6">
       <div className="flex items-center justify-between border-b border-slate-100 pb-4">
         <div className="flex items-center gap-2">
           <Activity className="w-4 h-4 text-indigo-600" />

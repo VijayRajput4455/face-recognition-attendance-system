@@ -61,7 +61,7 @@ export function FaceEnrollmentTrendChart({
   const enrolledArea = `${enrolledPath} L ${lastPt.x} ${svgHeight - paddingBottom} L ${firstPt.x} ${svgHeight - paddingBottom} Z`;
 
   return (
-    <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-7 shadow-xs space-y-6">
+    <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-7 shadow-xs h-full flex flex-col justify-between space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
         <div>
           <div className="flex items-center gap-2">
@@ -74,17 +74,17 @@ export function FaceEnrollmentTrendChart({
         </div>
 
         {/* Daily / Weekly / Monthly Switcher */}
-        <div className="flex items-center bg-slate-100 p-1 rounded-xl text-xs self-start sm:self-auto">
+        <div className="flex items-center bg-slate-100/90 p-1 rounded-xl border border-slate-200/60 text-xs self-start sm:self-auto shrink-0">
           {['daily', 'weekly', 'monthly'].map((t) => (
             <button
               key={t}
               type="button"
               onClick={() => setTimeframe?.(t)}
               className={cn(
-                'px-3 py-1.5 rounded-lg font-semibold capitalize transition-all cursor-pointer text-[11px]',
+                'px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all cursor-pointer',
                 timeframe === t
-                  ? 'bg-white text-indigo-700 shadow-2xs'
-                  : 'text-slate-500 hover:text-slate-900'
+                  ? 'bg-white text-indigo-600 shadow-2xs font-bold'
+                  : 'text-slate-500 hover:text-slate-800'
               )}
             >
               {t}
