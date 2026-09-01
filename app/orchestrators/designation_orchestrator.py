@@ -9,6 +9,7 @@ from app.schemas.designation import (
     DesignationCreate,
     DesignationUpdate,
     DesignationResponse,
+    DesignationBulkResponse,
 )
 
 logger = get_logger(__name__)

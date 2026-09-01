@@ -12,6 +12,7 @@ from app.schemas.shift import (
     ShiftCreate,
     ShiftUpdate,
     ShiftResponse,
+    ShiftBulkResponse,
 )
 
 logger = get_logger(__name__)

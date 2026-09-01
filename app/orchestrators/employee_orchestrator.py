@@ -14,6 +14,8 @@ from app.schemas.employee import (
     EmployeeCreateRequest,
     EmployeeUpdateRequest,
     EmployeeResponse,
+    EmployeeBulkItem,
+    EmployeeBulkResponse,
 )
 
 from app.services.milvus_service import MilvusService

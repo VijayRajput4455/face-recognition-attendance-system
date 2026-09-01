@@ -11,6 +11,7 @@ from app.schemas.department import (
     DepartmentCreate,
     DepartmentUpdate,
     DepartmentResponse,
+    DepartmentBulkResponse,
 )
 
 logger = get_logger(__name__)
