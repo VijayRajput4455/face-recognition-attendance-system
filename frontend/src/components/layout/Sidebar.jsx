@@ -7,7 +7,6 @@ import {
   Building2,
   Briefcase,
   Clock,
-  CalendarCheck2,
   ScanFace,
   Video,
   Activity,
@@ -34,10 +33,6 @@ export function Sidebar() {
         { id: 'designations', label: 'Designations', icon: Briefcase },
         { id: 'shifts', label: 'Shifts', icon: Clock },
       ],
-    },
-    {
-      group: 'ATTENDANCE',
-      items: [{ id: 'attendance', label: 'Attendance', icon: CalendarCheck2 }],
     },
     {
       group: 'AI & BIOMETRICS',
@@ -90,7 +85,7 @@ export function Sidebar() {
                   FaceAttend <span className="text-indigo-600">AI</span>
                 </span>
                 <span className="text-[10px] text-slate-400 font-medium tracking-wide mt-1 truncate">
-                  Enterprise Attendance
+                  AI Biometric Identity
                 </span>
               </div>
             )}

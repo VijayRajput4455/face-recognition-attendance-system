@@ -5,7 +5,6 @@ import { departmentsApi } from '../../api/departments';
 import { designationsApi } from '../../api/designations';
 import { shiftsApi } from '../../api/shifts';
 import { enrollmentsApi } from '../../api/enrollments';
-import { attendanceApi } from '../../api/attendance';
 import { milvusApi } from '../../api/milvus';
 import { useNavigation } from '../../context/NavigationContext';
 import { useToast } from '../../context/ToastContext';
@@ -37,8 +36,6 @@ import {
   Video,
   Edit2,
   Trash2,
-  CalendarCheck2,
-  FileText,
   ShieldCheck,
   CheckCircle2,
   XCircle,
@@ -162,28 +159,7 @@ export function EmployeeProfile() {
     enabled: Boolean(employeeId),
   });
 
-  // 5. Fetch Attendance Logs for Employee
-  const { data: attendanceLogs = [], isLoading: loadingLogs } = useQuery({
-    queryKey: ['attendance-logs-employee', employeeId],
-    queryFn: () => attendanceApi.getLogsByEmployee(employeeId),
-    enabled: Boolean(employeeId),
-  });
-
-  // 6. Fetch Attendance Summaries for Employee
-  const { data: attendanceSummaries = [], isLoading: loadingSummaries } = useQuery({
-    queryKey: ['attendance-summaries-employee', employeeId],
-    queryFn: () => attendanceApi.getSummariesByEmployee(employeeId),
-    enabled: Boolean(employeeId),
-  });
-
-  // 7. Fetch Monthly Report
-  const { data: monthlyReport, isLoading: loadingMonthlyReport } = useQuery({
-    queryKey: ['monthly-report', employeeId, reportMonth, reportYear],
-    queryFn: () => attendanceApi.getMonthlyReport(employeeId, reportMonth, reportYear),
-    enabled: Boolean(employeeId) && activeTab === 'report',
-  });
-
-  // 8. Fetch Milvus Vector details for Employee
+  // 5. Fetch Milvus Vector details for Employee
   const { data: milvusVector } = useQuery({
     queryKey: ['milvus-employee', employeeId],
     queryFn: () => milvusApi.getEmployeeById(employeeId),
@@ -326,8 +302,6 @@ export function EmployeeProfile() {
       <div className="flex items-center gap-2 border-b border-slate-200 pb-1">
         {[
           { id: 'overview', label: 'Overview', icon: User },
-          { id: 'attendance', label: 'Attendance Logs', icon: CalendarCheck2 },
-          { id: 'report', label: 'Monthly Report', icon: FileText },
           { id: 'biometrics', label: 'Biometrics & AI', icon: ScanFace },
         ].map((tab) => {
           const Icon = tab.icon;
@@ -460,128 +434,7 @@ export function EmployeeProfile() {
         </div>
       )}
 
-      {/* Tab 2: Attendance Logs */}
-      {activeTab === 'attendance' && (
-        <div className="space-y-4">
-          <DataTable
-            columns={[
-              {
-                header: 'Recognition Time',
-                accessor: 'recognition_time',
-                sortable: true,
-                render: (log) => (
-                  <div>
-                    <span className="font-semibold text-slate-900">{formatTime(log.recognition_time)}</span>
-                    <span className="text-[11px] text-slate-400 block">{formatDate(log.recognition_time)}</span>
-                  </div>
-                ),
-              },
-              {
-                header: 'Event Type',
-                accessor: 'event_type',
-                render: (log) => <StatusBadge status={log.event_type} type="event" />,
-              },
-              {
-                header: 'Confidence Score',
-                accessor: 'recognition_score',
-                render: (log) => (
-                  <span className="font-mono text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                    {formatConfidence(log.recognition_score)}
-                  </span>
-                ),
-              },
-              {
-                header: 'Camera / Terminal',
-                accessor: 'camera_name',
-                render: (log) => <span>{log.camera_name || log.camera_id || 'Main Terminal'}</span>,
-              },
-              {
-                header: 'Detection Type',
-                accessor: 'recognition_type',
-                render: (log) => <span className="text-slate-500 font-mono text-[11px]">{log.recognition_type}</span>,
-              },
-            ]}
-            data={attendanceLogs}
-            loading={loadingLogs}
-            emptyTitle="No attendance logs recorded"
-            emptyDescription="There are no face recognition logs recorded for this employee yet."
-          />
-        </div>
-      )}
-
-      {/* Tab 3: Monthly Report */}
-      {activeTab === 'report' && (
-        <div className="space-y-6">
-          {/* Month & Year Selector */}
-          <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <h4 className="text-xs font-bold text-slate-900">Monthly Attendance Report</h4>
-              <p className="text-[11px] text-slate-500">Aggregated working duration and present days breakdown</p>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <select
-                value={reportMonth}
-                onChange={(e) => setReportMonth(parseInt(e.target.value, 10))}
-                className="px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-xl text-slate-700 font-semibold"
-              >
-                {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-                  <option key={m} value={m}>
-                    {new Date(2000, m - 1, 1).toLocaleString('default', { month: 'long' })}
-                  </option>
-                ))}
-              </select>
-
-              <select
-                value={reportYear}
-                onChange={(e) => setReportYear(parseInt(e.target.value, 10))}
-                className="px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-xl text-slate-700 font-semibold"
-              >
-                {[2024, 2025, 2026, 2027].map((y) => (
-                  <option key={y} value={y}>
-                    {y}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Monthly KPI Stats */}
-          {loadingMonthlyReport ? (
-            <div className="h-32 bg-white rounded-2xl border border-slate-200 animate-pulse" />
-          ) : monthlyReport ? (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <StatCard
-                title="Present Days"
-                value={`${monthlyReport.present_days} Days`}
-                subtitle={`Recorded in ${new Date(2000, reportMonth - 1, 1).toLocaleString('default', { month: 'long' })}`}
-                icon={CalendarCheck2}
-                color="emerald"
-              />
-              <StatCard
-                title="Total Working Duration"
-                value={monthlyReport.total_working_duration || formatMinutes(monthlyReport.total_working_minutes)}
-                subtitle="Calculated check-in to out"
-                icon={Clock}
-                color="indigo"
-              />
-              <StatCard
-                title="Total Working Minutes"
-                value={`${monthlyReport.total_working_minutes} Mins`}
-                subtitle="Cumulative duration"
-                icon={FileText}
-                color="blue"
-              />
-            </div>
-          ) : (
-            <div className="text-center py-10 bg-white rounded-2xl border border-slate-200 text-slate-400 text-xs">
-              No summary report data available for this month.
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Tab 4: Biometrics & AI */}
+      {/* Tab 2: Biometrics & AI */}
       {activeTab === 'biometrics' && (
         <div className="space-y-6">
           <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs space-y-4">
@@ -702,7 +555,7 @@ export function EmployeeProfile() {
         isLoading={deleteMutation.isPending}
         danger
         title="Delete Employee Record?"
-        description={`Are you sure you want to permanently delete ${fullName} (${employee.employee_code})? This action cannot be undone and will delete all biometric embeddings and attendance history.`}
+        description={`Are you sure you want to permanently delete ${fullName} (${employee.employee_code})? This action cannot be undone and will delete all biometric embeddings.`}
         confirmText="Delete Record"
       />
 
@@ -726,7 +579,7 @@ export function EmployeeProfile() {
         isLoading={deleteBiometricsMutation.isPending}
         danger
         title="Remove All Facial Biometrics from Milvus?"
-        description={`Are you sure you want to remove all biometric embeddings for ${fullName} (${employee.employee_code}) from Milvus? The employee profile, details, and attendance history will remain intact.`}
+        description={`Are you sure you want to remove all biometric embeddings for ${fullName} (${employee.employee_code}) from Milvus? The employee profile and details will remain intact.`}
         confirmText="Remove Biometrics"
       />
     </div>
