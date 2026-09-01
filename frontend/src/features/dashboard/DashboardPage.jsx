@@ -251,6 +251,38 @@ export function DashboardPage() {
         enrolledCount={enrolledCount}
         pendingCount={pendingCount}
         loading={loadingSummary}
+        selectedStatus={filters.status === 'ALL' ? '' : filters.status}
+        selectedEnrollmentStatus={filters.enrollmentStatus === 'ALL' ? '' : filters.enrollmentStatus}
+        onSelectMetric={(metric) => {
+          if (metric === 'total') {
+            setFilters((prev) => ({ ...prev, status: 'ALL', enrollmentStatus: 'ALL' }));
+          } else if (metric === 'active') {
+            setFilters((prev) => ({
+              ...prev,
+              status: prev.status === 'ACTIVE' ? 'ALL' : 'ACTIVE',
+            }));
+          } else if (metric === 'inactive') {
+            setFilters((prev) => ({
+              ...prev,
+              status: prev.status === 'INACTIVE' ? 'ALL' : 'INACTIVE',
+            }));
+          } else if (metric === 'enrolled') {
+            setFilters((prev) => ({
+              ...prev,
+              enrollmentStatus: prev.enrollmentStatus === 'ENROLLED' ? 'ALL' : 'ENROLLED',
+            }));
+          } else if (metric === 'pending') {
+            setFilters((prev) => ({
+              ...prev,
+              enrollmentStatus: prev.enrollmentStatus === 'PENDING' ? 'ALL' : 'PENDING',
+            }));
+          } else if (metric === 'ready') {
+            setFilters((prev) => ({
+              ...prev,
+              enrollmentStatus: prev.enrollmentStatus === 'ENROLLED' ? 'ALL' : 'ENROLLED',
+            }));
+          }
+        }}
         onNavigate={(page) => navigate(page)}
       />
 

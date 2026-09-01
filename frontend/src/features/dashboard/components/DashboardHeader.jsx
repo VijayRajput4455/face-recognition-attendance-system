@@ -36,17 +36,17 @@ export function DashboardHeader({
 
       <div className="flex flex-wrap items-center gap-2.5">
         {/* Date Range Selector */}
-        <div className="flex items-center bg-slate-100 p-1 rounded-2xl border border-slate-200/80 text-xs">
+        <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200/80 text-xs">
           {dateOptions.map((opt) => (
             <button
               key={opt.id}
               type="button"
               onClick={() => setDateRange(opt.id)}
               className={cn(
-                'px-3 py-1.5 rounded-xl font-semibold transition-all cursor-pointer',
+                'px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer',
                 dateRange === opt.id
-                  ? 'bg-white text-indigo-700 shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-white text-indigo-600 shadow-2xs'
+                  : 'text-slate-500 hover:text-slate-800'
               )}
             >
               {opt.label}
