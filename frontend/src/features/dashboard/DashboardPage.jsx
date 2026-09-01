@@ -343,9 +343,9 @@ export function DashboardPage() {
         onSelectDesignation={(id) => navigate('designations')}
       />
 
-      {/* 6. Level 4: Operational Growth & Recent Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
+      {/* 6. Level 4: Workforce Growth & Recognition System Health */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="lg:col-span-7">
           <EmployeeGrowthTrendChart
             growthData={growthData}
             range={growthRange}
@@ -354,18 +354,7 @@ export function DashboardPage() {
           />
         </div>
 
-        <div className="lg:col-span-1">
-          <RecentActivityFeed
-            activities={activitiesData}
-            loading={loadingActivity}
-            onNavigate={(page) => navigate(page)}
-          />
-        </div>
-      </div>
-
-      {/* 7. Level 5: Recognition System Health & Telemetry */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-5">
           <RecognitionSystemHealthCard
             milvusHealthy={healthData?.is_nominal ?? true}
             vectorCount={vectorCount}
@@ -373,22 +362,30 @@ export function DashboardPage() {
             successRate={healthData?.success_rate_percentage ?? 99.1}
           />
         </div>
-
-        <div className="lg:col-span-2 space-y-6">
-          <MilvusVectorDistributionChart
-            totalVectors={vectorCount}
-            dimension={512}
-            metricType="COSINE"
-            indexType="HNSW"
-            isConnected={healthData?.is_nominal ?? true}
-          />
-
-          <ConfidenceDistributionChart
-            avgConfidence={healthData?.accuracy_percentage ?? 98.2}
-            totalScans={vectorCount}
-          />
-        </div>
       </div>
+
+      {/* 7. Level 5: Vector Index & Confidence Telemetry */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <MilvusVectorDistributionChart
+          totalVectors={vectorCount}
+          dimension={512}
+          metricType="COSINE"
+          indexType="HNSW"
+          isConnected={healthData?.is_nominal ?? true}
+        />
+
+        <ConfidenceDistributionChart
+          avgConfidence={healthData?.accuracy_percentage ?? 98.2}
+          totalScans={vectorCount}
+        />
+      </div>
+
+      {/* 8. Level 6 (Final): Live Recent Biometric Activity & Audit Stream */}
+      <RecentActivityFeed
+        activities={activitiesData}
+        loading={loadingActivity}
+        onNavigate={(page) => navigate(page)}
+      />
     </div>
   );
 }
