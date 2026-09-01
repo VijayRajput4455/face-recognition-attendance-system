@@ -13,6 +13,7 @@ import FaceEnrollmentOverviewDonut from './components/FaceEnrollmentOverviewDonu
 import FaceEnrollmentTrendChart from './components/FaceEnrollmentTrendChart';
 import EnrollmentCompletionTargetCard from './components/EnrollmentCompletionTargetCard';
 import DepartmentEnrollmentHealthTable from './components/DepartmentEnrollmentHealthTable';
+import WorkforceDistributionBarChart from './components/WorkforceDistributionBarChart';
 import ShiftDistributionChart from './components/ShiftDistributionChart';
 import DesignationDistributionChart from './components/DesignationDistributionChart';
 import EmployeeGrowthTrendChart from './components/EmployeeGrowthTrendChart';
@@ -288,17 +289,19 @@ export function DashboardPage() {
 
       {/* 4. Level 2: Face Enrollment Analytics */}
       <div className="space-y-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Donut Overview */}
-          <FaceEnrollmentOverviewDonut
-            enrolled={enrollmentOverview?.enrolled ?? enrolledCount}
-            pending={enrollmentOverview?.pending ?? 0}
-            failed={enrollmentOverview?.failed ?? 0}
-            notStarted={enrollmentOverview?.not_started ?? 0}
-          />
+          <div className="lg:col-span-5">
+            <FaceEnrollmentOverviewDonut
+              enrolled={enrollmentOverview?.enrolled ?? enrolledCount}
+              pending={enrollmentOverview?.pending ?? 0}
+              failed={enrollmentOverview?.failed ?? 0}
+              notStarted={enrollmentOverview?.not_started ?? 0}
+            />
+          </div>
 
           {/* Large Multi-Series Enrollment Trajectory Chart */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-7">
             <FaceEnrollmentTrendChart
               timeframe={trendTimeframe}
               setTimeframe={setTrendTimeframe}
@@ -309,8 +312,8 @@ export function DashboardPage() {
         </div>
 
         {/* Enrollment Completion Target & Action Card */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-1">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="lg:col-span-5">
             <EnrollmentCompletionTargetCard
               enrolledCount={enrolledCount}
               pendingCount={pendingCount}
@@ -321,7 +324,7 @@ export function DashboardPage() {
             />
           </div>
 
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-7">
             <DepartmentEnrollmentHealthTable
               departments={departmentsData}
               onSelectDepartment={() => navigate('departments')}
@@ -330,20 +333,15 @@ export function DashboardPage() {
         </div>
       </div>
 
-      {/* 5. Level 3: Workforce Analytics (Shifts & Designations) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ShiftDistributionChart
-          shifts={shiftsData}
-          selectedShiftId={filters.shiftId}
-          onSelectShift={(shiftId) => setFilters({ ...filters, shiftId })}
-          onAddShift={() => navigate('shifts')}
-        />
-
-        <DesignationDistributionChart
-          designations={designationsData}
-          onSelectDesignation={() => navigate('designations')}
-        />
-      </div>
+      {/* 5. Level 3: Multi-Dimensional Workforce Distribution Matrix */}
+      <WorkforceDistributionBarChart
+        departments={departmentsData}
+        shifts={shiftsData}
+        designations={designationsData}
+        onSelectDepartment={(id) => navigate('departments')}
+        onSelectShift={(id) => navigate('shifts')}
+        onSelectDesignation={(id) => navigate('designations')}
+      />
 
       {/* 6. Level 4: Operational Growth & Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
