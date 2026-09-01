@@ -17,17 +17,19 @@ export function FaceEnrollmentTrendChart({
 
   const maxVal = Math.max(...chartPoints.map((p) => p.total_employees), 5);
 
-  // SVG dimensions
-  const svgWidth = 650;
-  const svgHeight = 220;
-  const paddingX = 40;
-  const paddingY = 30;
-  const graphWidth = svgWidth - paddingX * 2;
-  const graphHeight = svgHeight - paddingY * 2;
+  // SVG dimensions - expanded width and optimized inner graph padding
+  const svgWidth = 900;
+  const svgHeight = 240;
+  const paddingLeft = 36;
+  const paddingRight = 16;
+  const paddingTop = 20;
+  const paddingBottom = 30;
+  const graphWidth = svgWidth - paddingLeft - paddingRight;
+  const graphHeight = svgHeight - paddingTop - paddingBottom;
 
   const getCoordinates = (val, idx) => {
-    const x = paddingX + (idx / Math.max(chartPoints.length - 1, 1)) * graphWidth;
-    const y = svgHeight - paddingY - (val / (maxVal || 1)) * graphHeight;
+    const x = paddingLeft + (idx / Math.max(chartPoints.length - 1, 1)) * graphWidth;
+    const y = svgHeight - paddingBottom - (val / (maxVal || 1)) * graphHeight;
     return { x, y };
   };
 
@@ -56,7 +58,7 @@ export function FaceEnrollmentTrendChart({
   // Enrolled Area Fill
   const firstPt = getCoordinates(chartPoints[0]?.face_enrolled || 0, 0);
   const lastPt = getCoordinates(chartPoints[chartPoints.length - 1]?.face_enrolled || 0, chartPoints.length - 1);
-  const enrolledArea = `${enrolledPath} L ${lastPt.x} ${svgHeight - paddingY} L ${firstPt.x} ${svgHeight - paddingY} Z`;
+  const enrolledArea = `${enrolledPath} L ${lastPt.x} ${svgHeight - paddingBottom} L ${firstPt.x} ${svgHeight - paddingBottom} Z`;
 
   return (
     <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-7 shadow-xs space-y-6">
@@ -122,21 +124,21 @@ export function FaceEnrollmentTrendChart({
 
           {/* Grid lines */}
           {[0, 0.25, 0.5, 0.75, 1].map((ratio, i) => {
-            const y = svgHeight - paddingY - ratio * graphHeight;
+            const y = svgHeight - paddingBottom - ratio * graphHeight;
             const val = Math.round(ratio * maxVal);
             return (
               <g key={i}>
                 <line
-                  x1={paddingX}
+                  x1={paddingLeft}
                   y1={y}
-                  x2={svgWidth - paddingX}
+                  x2={svgWidth - paddingRight}
                   y2={y}
                   stroke="#f1f5f9"
                   strokeWidth="1"
                   strokeDasharray="4 4"
                 />
                 <text
-                  x={paddingX - 10}
+                  x={paddingLeft - 8}
                   y={y + 3}
                   textAnchor="end"
                   fontSize="9"
@@ -187,9 +189,9 @@ export function FaceEnrollmentTrendChart({
                 {isHovered && (
                   <line
                     x1={x}
-                    y1={paddingY}
+                    y1={paddingTop}
                     x2={x}
-                    y2={svgHeight - paddingY}
+                    y2={svgHeight - paddingBottom}
                     stroke="#cbd5e1"
                     strokeWidth="1.5"
                     strokeDasharray="2 2"
@@ -229,7 +231,7 @@ export function FaceEnrollmentTrendChart({
           <div
             className="absolute top-2 transform -translate-x-1/2 bg-slate-900 text-white text-xs font-semibold p-3 rounded-2xl shadow-xl pointer-events-none z-10 space-y-1.5 border border-slate-800 backdrop-blur-md"
             style={{
-              left: `${((hoveredIdx + 0.5) / chartPoints.length) * 100}%`,
+              left: `${(getCoordinates(chartPoints[hoveredIdx].face_enrolled, hoveredIdx).x / svgWidth) * 100}%`,
             }}
           >
             <div className="text-[11px] text-slate-400 font-mono border-b border-slate-800 pb-1">
