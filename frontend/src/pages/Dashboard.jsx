@@ -1,5 +1,6 @@
 import React from 'react';
-import { Users, UserCheck, ShieldCheck, Scan, Calendar, Download, ChevronDown, Building2 } from 'lucide-react';
+import { Users, UserCheck, ShieldCheck, Scan, Calendar, Download, Sparkles } from 'lucide-react';
+import PageBanner from '../components/ui/PageBanner';
 
 export function Dashboard({ setActiveTab }) {
   const topMetrics = [
@@ -58,27 +59,24 @@ export function Dashboard({ setActiveTab }) {
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900 font-sans">
-            Dashboard
-          </h2>
-          <p className="text-xs font-medium text-slate-500 mt-0.5">
-            Welcome back, Emma! Here's what's happening today.
-          </p>
-        </div>
-
-        <div className="flex items-center space-x-3">
-          <div className="flex items-center space-x-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-xs">
-            <Calendar className="h-3.5 w-3.5 text-slate-400" />
-            <span>May 18, 2024</span>
+      {/* Hero Header */}
+      <PageBanner
+        badge="Enterprise Analytics"
+        badgeIcon={Sparkles}
+        title="Executive Dashboard"
+        description="Real-time employee metrics, facial recognition telemetry, and biometric workforce analytics."
+        actions={
+          <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2 rounded-xl border border-white/15 bg-white/10 px-3.5 py-2 text-xs font-semibold text-white backdrop-blur-md shadow-xs">
+              <Calendar className="h-3.5 w-3.5 text-indigo-200" />
+              <span>May 18, 2024</span>
+            </div>
+            <button className="p-2 rounded-xl bg-white hover:bg-indigo-50 text-indigo-950 shadow-md transition-all cursor-pointer">
+              <Download className="h-4 w-4 text-indigo-600" />
+            </button>
           </div>
-          <button className="p-2 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 shadow-xs transition-colors">
-            <Download className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Top 4 Metrics Cards */}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
