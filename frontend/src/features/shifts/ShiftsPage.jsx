@@ -8,6 +8,7 @@ import Modal from '../../components/ui/Modal';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import DataTable from '../../components/ui/DataTable';
 import PageBanner from '../../components/ui/PageBanner';
+import BulkImportModal from '../../components/ui/BulkImportModal';
 import { cn } from '../../lib/utils';
 import {
   Clock,
@@ -21,6 +22,7 @@ import {
   Loader2,
   LayoutGrid,
   LayoutList,
+  FileSpreadsheet,
 } from 'lucide-react';
 
 export function ShiftsPage() {
@@ -29,8 +31,10 @@ export function ShiftsPage() {
 
   const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'list'
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [bulkModalOpen, setBulkModalOpen] = useState(false);
   const [editingShift, setEditingShift] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+
 
   // Form State
   const [shiftName, setShiftName] = useState('');
@@ -511,6 +515,16 @@ export function ShiftsPage() {
               </button>
             </div>
 
+            {/* Import CSV Action */}
+            <button
+              type="button"
+              onClick={() => setBulkModalOpen(true)}
+              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-xl transition-all cursor-pointer shrink-0"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-indigo-600" />
+              <span>Import CSV</span>
+            </button>
+
             <button
               onClick={handleOpenCreate}
               className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-xl shadow-xs hover:shadow transition-all cursor-pointer shrink-0"
@@ -521,6 +535,22 @@ export function ShiftsPage() {
           </div>
         </div>
       </div>
+
+      {/* Bulk Import CSV Modal */}
+      <BulkImportModal
+        isOpen={bulkModalOpen}
+        onClose={() => setBulkModalOpen(false)}
+        title="Import Shifts in Bulk"
+        entityName="Shifts"
+        sampleFileName="shifts_template.csv"
+        sampleTemplate="shift_name,start_time,end_time,grace_minutes\nMorning Shift,09:00:00,18:00:00,15\nEvening Shift,14:00:00,22:30:00,15\nNight Shift,22:00:00,06:00:00,20\nGeneral Shift,10:00:00,19:00:00,15"
+        onUpload={(formData) => shiftsApi.bulkUpload(formData)}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['shifts'] });
+          success('Bulk Import Completed', 'Work shifts have been imported successfully.');
+        }}
+      />
+
 
       {/* View Mode: List or Grid */}
       {viewMode === 'list' ? (

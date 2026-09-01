@@ -53,3 +53,25 @@ class ShiftResponse(BaseModel):
     model_config = ConfigDict(
         from_attributes=True,
     )
+
+
+# ==========================================================
+# Bulk Schemas
+# ==========================================================
+
+class BulkErrorDetail(BaseModel):
+    row: int
+    identifier: str | None = None
+    error: str
+
+
+class ShiftBulkCreateRequest(BaseModel):
+    items: list[ShiftCreate]
+
+
+class ShiftBulkResponse(BaseModel):
+    total_records: int
+    successful_count: int
+    failed_count: int
+    errors: list[BulkErrorDetail] = []
+    inserted_shifts: list[ShiftResponse] = []

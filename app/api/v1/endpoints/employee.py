@@ -1,8 +1,9 @@
-from urllib import request
 from uuid import UUID
 
 from fastapi import (
     APIRouter,
+    File,
+    UploadFile,
     status,
 )
 
@@ -16,6 +17,8 @@ from app.schemas.employee import (
     EmployeeCreateRequest,
     EmployeeResponse,
     EmployeeUpdateRequest,
+    EmployeeBulkCreateRequest,
+    EmployeeBulkResponse,
 )
 
 router = APIRouter()
@@ -47,6 +50,52 @@ def create_employee(
     return employee_orchestrator.create_employee(
         request=request,
     )
+
+
+# ==========================================================
+# Bulk Create Employees (JSON List)
+# ==========================================================
+
+@router.post(
+    "/bulk",
+    response_model=EmployeeBulkResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def bulk_create_employees(
+    request: EmployeeBulkCreateRequest,
+):
+
+    logger.info(
+        f"Bulk employee creation request received: {len(request.items)} items."
+    )
+
+    return employee_orchestrator.bulk_create(
+        items=request.items,
+    )
+
+
+# ==========================================================
+# Bulk Upload Employees (CSV File)
+# ==========================================================
+
+@router.post(
+    "/bulk-upload",
+    response_model=EmployeeBulkResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def bulk_upload_employees_csv(
+    file: UploadFile = File(...),
+):
+
+    logger.info(
+        f"Bulk employee CSV upload received: {file.filename}"
+    )
+
+    content = await file.read()
+    return employee_orchestrator.bulk_upload_csv(
+        file_content=content,
+    )
+
 
 # ==========================================================
 # Get All Employees

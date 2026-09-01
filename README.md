@@ -632,6 +632,8 @@ FastAPI automatically generates interactive OpenAPI/Swagger documentation access
 #### 👥 Employees (`/api/v1/employees`)
 - `GET /api/v1/employees` — List all employees with multi-attribute filtering (department, shift, designation, status)
 - `POST /api/v1/employees` — Create a new employee profile
+- `POST /api/v1/employees/bulk` — **[NEW]** Bulk create employees from JSON list with smart name-to-ID foreign key resolution
+- `POST /api/v1/employees/bulk-upload` — **[NEW]** Bulk import employees from CSV file with column validation and row error reporting
 - `GET /api/v1/employees/{id}` — Fetch detailed employee record by UUID
 - `PUT /api/v1/employees/{id}` — Update employee details, department, shift, or designation
 - `DELETE /api/v1/employees/{id}` — Delete employee profile
@@ -639,6 +641,8 @@ FastAPI automatically generates interactive OpenAPI/Swagger documentation access
 #### 🏢 Departments (`/api/v1/departments`)
 - `GET /api/v1/departments` — List all organization departments
 - `POST /api/v1/departments` — Create a new department
+- `POST /api/v1/departments/bulk` — **[NEW]** Bulk create departments from JSON list
+- `POST /api/v1/departments/bulk-upload` — **[NEW]** Bulk import departments from CSV file (`department_name`, `description`)
 - `GET /api/v1/departments/{id}` — Fetch department by ID
 - `PUT /api/v1/departments/{id}` — Update department name
 - `DELETE /api/v1/departments/{id}` — Remove department
@@ -646,18 +650,23 @@ FastAPI automatically generates interactive OpenAPI/Swagger documentation access
 #### 💼 Designations (`/api/v1/designations`)
 - `GET /api/v1/designations` — List all job designations
 - `POST /api/v1/designations` — Create a new job designation
+- `POST /api/v1/designations/bulk` — **[NEW]** Bulk create designations from JSON list
+- `POST /api/v1/designations/bulk-upload` — **[NEW]** Bulk import designations from CSV file (`designation_name`, `description`)
 - `PUT /api/v1/designations/{id}` — Update designation name
 - `DELETE /api/v1/designations/{id}` — Remove designation
 
 #### ⏰ Shifts (`/api/v1/shifts`)
 - `GET /api/v1/shifts` — List all operational shifts
 - `POST /api/v1/shifts` — Create shift (name, start time, end time, grace minutes)
+- `POST /api/v1/shifts/bulk` — **[NEW]** Bulk create shifts from JSON list
+- `POST /api/v1/shifts/bulk-upload` — **[NEW]** Bulk import shifts from CSV file (`shift_name`, `start_time`, `end_time`, `grace_minutes`)
 - `PUT /api/v1/shifts/{id}` — Update shift timings
 - `DELETE /api/v1/shifts/{id}` — Remove shift
 
 #### 🧑‍💻 Enrollments (`/api/v1/enrollments`)
 - `GET /api/v1/enrollments` — List biometric enrollment jobs and status
 - `POST /api/v1/enrollments/upload-video` — Upload employee onboarding video for background processing
+
 - `GET /api/v1/enrollments/{id}` — Fetch status of a specific enrollment job
 - `POST /api/v1/enrollments/{id}/retry` — Retry a failed enrollment video processing job
 

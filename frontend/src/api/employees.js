@@ -8,8 +8,14 @@ export const employeesApi = {
   getByShift: (shiftId) => apiClient.get(`/employees/shift/${shiftId}`),
   getByStatus: (status) => apiClient.get(`/employees/status/${status}`),
   create: (data) => apiClient.post('/employees', data),
+  bulkCreate: (items) => apiClient.post('/employees/bulk', { items }),
+  bulkUpload: (formData) =>
+    apiClient.post('/employees/bulk-upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
   update: (id, data) => apiClient.put(`/employees/${id}`, data),
   delete: (id) => apiClient.delete(`/employees/${id}`),
 };
 
 export default employeesApi;
+

@@ -14,6 +14,7 @@ import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import StatCard from '../../components/ui/StatCard';
 import EmployeeDrawer from './EmployeeDrawer';
 import PageBanner from '../../components/ui/PageBanner';
+import BulkImportModal from '../../components/ui/BulkImportModal';
 import { getInitials, getAvatarColor, formatDate, cn } from '../../lib/utils';
 import {
   UserPlus,
@@ -34,6 +35,7 @@ import {
   LayoutGrid,
   LayoutList,
   Mail,
+  FileSpreadsheet,
 } from 'lucide-react';
 
 export function EmployeesPage() {
@@ -45,6 +47,8 @@ export function EmployeesPage() {
   const [drawerOpen, setDrawerOpen] = useState(pageParams.action === 'create');
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [bulkModalOpen, setBulkModalOpen] = useState(false);
+
 
   // Filters State
   const [viewMode, setViewMode] = useState('list'); // 'list' | 'grid'
@@ -669,6 +673,16 @@ export function EmployeesPage() {
               </button>
             </div>
 
+            {/* Import CSV Action */}
+            <button
+              type="button"
+              onClick={() => setBulkModalOpen(true)}
+              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-xl transition-all cursor-pointer shrink-0"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-indigo-600" />
+              <span>Import CSV</span>
+            </button>
+
             <button
               onClick={() => {
                 setSelectedEmployee(null);
@@ -682,6 +696,22 @@ export function EmployeesPage() {
           </div>
         </div>
       </div>
+
+      {/* Bulk Import CSV Modal */}
+      <BulkImportModal
+        isOpen={bulkModalOpen}
+        onClose={() => setBulkModalOpen(false)}
+        title="Import Employees in Bulk"
+        entityName="Employees"
+        sampleFileName="employees_template.csv"
+        sampleTemplate="employee_code,first_name,last_name,email,phone,joining_date,department,designation,shift,status\nEMP-101,John,Doe,john.doe@example.com,+1234567890,2026-01-15,Engineering,Senior AI Engineer,Morning Shift,ACTIVE\nEMP-102,Jane,Smith,jane.smith@example.com,+1987654321,2026-02-01,Operations,Operations Lead,General Shift,ACTIVE"
+        onUpload={(formData) => employeesApi.bulkUpload(formData)}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['employees'] });
+          success('Bulk Import Completed', 'Employees have been added to the system.');
+        }}
+      />
+
 
       {/* Employees View: List or Grid */}
       {viewMode === 'list' ? (

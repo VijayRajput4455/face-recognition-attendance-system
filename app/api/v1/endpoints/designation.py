@@ -1,7 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter
-from fastapi import status
+from fastapi import APIRouter, File, UploadFile, status
 
 from app.core.logger import get_logger
 from app.orchestrators.designation_orchestrator import (
@@ -11,6 +10,8 @@ from app.schemas.designation import (
     DesignationCreate,
     DesignationUpdate,
     DesignationResponse,
+    DesignationBulkCreateRequest,
+    DesignationBulkResponse,
 )
 
 logger = get_logger(__name__)
@@ -38,6 +39,52 @@ def create_designation(
     return designation_orchestrator.create(
         request=request,
     )
+
+
+# ==========================================================
+# Bulk Create Designations (JSON List)
+# ==========================================================
+
+@router.post(
+    "/bulk",
+    response_model=DesignationBulkResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def bulk_create_designations(
+    request: DesignationBulkCreateRequest,
+):
+
+    logger.info(
+        f"Bulk designation creation request received: {len(request.items)} items."
+    )
+
+    return designation_orchestrator.bulk_create(
+        items=request.items,
+    )
+
+
+# ==========================================================
+# Bulk Upload Designations (CSV File)
+# ==========================================================
+
+@router.post(
+    "/bulk-upload",
+    response_model=DesignationBulkResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def bulk_upload_designations_csv(
+    file: UploadFile = File(...),
+):
+
+    logger.info(
+        f"Bulk designation CSV upload received: {file.filename}"
+    )
+
+    content = await file.read()
+    return designation_orchestrator.bulk_upload_csv(
+        file_content=content,
+    )
+
 
 
 # ==========================================================

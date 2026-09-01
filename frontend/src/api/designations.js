@@ -16,6 +16,18 @@ export const designationsApi = {
     return apiClient.post('/designations', data);
   },
 
+  // POST /api/v1/designations/bulk
+  bulkCreate: async (items) => {
+    return apiClient.post('/designations/bulk', { items });
+  },
+
+  // POST /api/v1/designations/bulk-upload
+  bulkUpload: async (formData) => {
+    return apiClient.post('/designations/bulk-upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+
   // PUT /api/v1/designations/{id}
   update: async (id, data) => {
     return apiClient.put(`/designations/${id}`, data);
@@ -28,3 +40,4 @@ export const designationsApi = {
 };
 
 export default designationsApi;
+

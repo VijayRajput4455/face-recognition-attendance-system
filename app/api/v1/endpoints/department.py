@@ -1,7 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter
-from fastapi import status
+from fastapi import APIRouter, File, UploadFile, status
 
 from app.core.logger import get_logger
 from app.orchestrators.department_orchestrator import (
@@ -11,6 +10,8 @@ from app.schemas.department import (
     DepartmentCreate,
     DepartmentUpdate,
     DepartmentResponse,
+    DepartmentBulkCreateRequest,
+    DepartmentBulkResponse,
 )
 
 logger = get_logger(__name__)
@@ -40,6 +41,52 @@ def create_department(
     return department_orchestrator.create(
         request=request,
     )
+
+
+# ==========================================================
+# Bulk Create Departments (JSON List)
+# ==========================================================
+
+@router.post(
+    "/bulk",
+    response_model=DepartmentBulkResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def bulk_create_departments(
+    request: DepartmentBulkCreateRequest,
+):
+
+    logger.info(
+        f"Bulk department creation request received: {len(request.items)} items."
+    )
+
+    return department_orchestrator.bulk_create(
+        items=request.items,
+    )
+
+
+# ==========================================================
+# Bulk Upload Departments (CSV File)
+# ==========================================================
+
+@router.post(
+    "/bulk-upload",
+    response_model=DepartmentBulkResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def bulk_upload_departments_csv(
+    file: UploadFile = File(...),
+):
+
+    logger.info(
+        f"Bulk department CSV upload received: {file.filename}"
+    )
+
+    content = await file.read()
+    return department_orchestrator.bulk_upload_csv(
+        file_content=content,
+    )
+
 
 
 # ==========================================================

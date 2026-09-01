@@ -8,6 +8,7 @@ import Modal from '../../components/ui/Modal';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import DataTable from '../../components/ui/DataTable';
 import PageBanner from '../../components/ui/PageBanner';
+import BulkImportModal from '../../components/ui/BulkImportModal';
 import { cn } from '../../lib/utils';
 import {
   Briefcase,
@@ -22,6 +23,7 @@ import {
   Loader2,
   LayoutGrid,
   LayoutList,
+  FileSpreadsheet,
 } from 'lucide-react';
 
 export function DesignationsPage() {
@@ -30,8 +32,10 @@ export function DesignationsPage() {
 
   const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'list'
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [bulkModalOpen, setBulkModalOpen] = useState(false);
   const [editingDesignation, setEditingDesignation] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+
 
   const [designationName, setDesignationName] = useState('');
   const [designationDesc, setDesignationDesc] = useState('');
@@ -469,6 +473,16 @@ export function DesignationsPage() {
               </button>
             </div>
 
+            {/* Import CSV Action */}
+            <button
+              type="button"
+              onClick={() => setBulkModalOpen(true)}
+              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-xl transition-all cursor-pointer shrink-0"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-indigo-600" />
+              <span>Import CSV</span>
+            </button>
+
             <button
               onClick={handleOpenCreate}
               className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-xl shadow-xs hover:shadow transition-all cursor-pointer shrink-0"
@@ -479,6 +493,22 @@ export function DesignationsPage() {
           </div>
         </div>
       </div>
+
+      {/* Bulk Import CSV Modal */}
+      <BulkImportModal
+        isOpen={bulkModalOpen}
+        onClose={() => setBulkModalOpen(false)}
+        title="Import Designations in Bulk"
+        entityName="Designations"
+        sampleFileName="designations_template.csv"
+        sampleTemplate="designation_name,description\nSenior AI Engineer,Develops computer vision and embedding models\nFrontend Architect,Leads React UI architecture and design system\nDevOps Engineer,Maintains Kubernetes and Milvus infrastructure\nProduct Manager,Guides feature roadmaps and attendance workflows\nHR Specialist,Manages employee onboarding and records"
+        onUpload={(formData) => designationsApi.bulkUpload(formData)}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['designations'] });
+          success('Bulk Import Completed', 'Designations have been imported successfully.');
+        }}
+      />
+
 
       {/* View Mode: List or Grid */}
       {viewMode === 'list' ? (
