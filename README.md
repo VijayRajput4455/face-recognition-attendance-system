@@ -28,26 +28,27 @@
 
 1. [Project Overview](#-project-overview)
 2. [Key Features](#-key-features)
-3. [System Architecture](#-system-architecture)
-4. [AI / Computer Vision Pipeline](#-ai--computer-vision-pipeline)
-5. [Milvus Vector Database Topology](#-milvus-vector-database-topology)
-6. [Asynchronous Queue & Worker Architecture](#-asynchronous-queue--worker-architecture)
-7. [Product Walkthrough & User Guide](#-product-walkthrough--user-guide)
-8. [Dashboard Analytics & Telemetry](#-dashboard-analytics--telemetry)
-9. [Technology Stack](#-technology-stack)
-10. [Repository Structure](#-repository-structure)
-11. [Prerequisites](#-prerequisites)
-12. [Environment Configuration](#-environment-configuration)
-13. [Quick Start with Docker](#-quick-start-with-docker)
-14. [Local Development Setup](#-local-development-setup)
-15. [API Documentation & Endpoints](#-api-documentation--endpoints)
-16. [Database Schema & ER Relationships](#-database-schema--er-relationships)
-17. [Troubleshooting & Diagnostics](#-troubleshooting--diagnostics)
-18. [Security & Biometric Privacy](#-security--biometric-privacy)
-19. [Performance & Scalability](#-performance--scalability)
-20. [Production Deployment Recommendations](#-production-deployment-recommendations)
-21. [Project Roadmap](#-project-roadmap)
-22. [Author](#-author)
+3. [Application Screenshots & Visual Tour](#-application-screenshots--visual-tour)
+4. [System Architecture](#-system-architecture)
+5. [AI / Computer Vision Pipeline](#-ai--computer-vision-pipeline)
+6. [Milvus Vector Database Topology](#-milvus-vector-database-topology)
+7. [Asynchronous Queue & Worker Architecture](#-asynchronous-queue--worker-architecture)
+8. [Product Walkthrough & User Guide](#-product-walkthrough--user-guide)
+9. [Dashboard Analytics & Telemetry](#-dashboard-analytics--telemetry)
+10. [Technology Stack](#-technology-stack)
+11. [Repository Structure](#-repository-structure)
+12. [Prerequisites](#-prerequisites)
+13. [Environment Configuration](#-environment-configuration)
+14. [Quick Start with Docker](#-quick-start-with-docker)
+15. [Local Development Setup](#-local-development-setup)
+16. [API Documentation & Endpoints](#-api-documentation--endpoints)
+17. [Database Schema & ER Relationships](#-database-schema--er-relationships)
+18. [Troubleshooting & Diagnostics](#-troubleshooting--diagnostics)
+19. [Security & Biometric Privacy](#-security--biometric-privacy)
+20. [Performance & Scalability](#-performance--scalability)
+21. [Production Deployment Recommendations](#-production-deployment-recommendations)
+22. [Project Roadmap](#-project-roadmap)
+23. [Author](#-author)
 
 ---
 
@@ -96,6 +97,60 @@ The **Face Recognition Employee Management & Analytics Platform** delivers an au
 4. **Growth & Turnaround**: Dual-mode trajectory curves and bi-directional **New Joiners vs Exits** turnaround analysis.
 5. **AI Vector Cluster Telemetry**: Real-time Milvus cluster health, 512-D density telemetry, and Cosine similarity spectrum classification.
 6. **Recent Biometric Audit Stream**: Live event feed with responsive **Grid View** and **List View** modes, filter tabs (`All`, `Completed`, `Issues`), and direct drilldown links.
+
+---
+
+## 🖼️ Application Screenshots & Visual Tour
+
+<div align="center">
+
+### 1. Executive 6-Tier Intelligence Dashboard
+![Executive Dashboard](docs/screenshots/01-dashboard.png)
+*High-density operational console featuring real-time enrollment trajectories, top-arch completion goals, vertical/pie dimension matrix, vector topology, and live audit telemetry.*
+
+---
+
+### 2. Employee Directory & Lifecycle Management
+![Employee Directory](docs/screenshots/02-employees.png)
+*Centralized workforce directory with multi-attribute filtering (Department, Shift, Designation, Status), instant search, and complete CRUD profile operations.*
+
+---
+
+### 3. Department Master Data & Capacity Tracker
+![Department Management](docs/screenshots/03-departments.png)
+*Enterprise department taxonomy hub with real-time staff count aggregation and structural capacity allocation.*
+
+---
+
+### 4. Designation Taxonomy & Role Classifications
+![Designation Management](docs/screenshots/04-designations.png)
+*Job role architecture and seniority classifications linked dynamically across all workforce analytics.*
+
+---
+
+### 5. Operational Shift Schedules & Grace Period Configurations
+![Shift Management](docs/screenshots/05-shifts.png)
+*Flexible multi-shift scheduling console with configurable start/end boundaries, overnight shift handling, and grace period minutes.*
+
+---
+
+### 6. Asynchronous Biometric Video Enrollment & Queue Monitor
+![Face Enrollment](docs/screenshots/06-face-enrollment.png)
+*Video ingestion pipeline monitor tracking asynchronous RabbitMQ worker jobs (`PENDING` ➔ `PROCESSING` ➔ `COMPLETED` / `FAILED`) with integrated video playback and retry controls.*
+
+---
+
+### 7. Real-Time AI Face Recognition & Live Verification Console
+![Face Recognition](docs/screenshots/07-face-recognition.png)
+*Interactive testing station supporting image uploads and live webcam capture with bounding boxes, ArcFace cosine similarity scores, and latency diagnostics.*
+
+---
+
+### 8. Milvus Vector Database Cluster Health & Telemetry
+![System Health](docs/screenshots/08-system-health.png)
+*Deep system telemetry monitor reporting Milvus HNSW vector collection state, ETCD metadata syncing, and microservice connectivity.*
+
+</div>
 
 ---
 
